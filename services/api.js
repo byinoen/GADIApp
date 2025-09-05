@@ -1,5 +1,5 @@
 // API service for connecting to FastAPI backend
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost'}:8000`.replace('https://localhost:8000', 'http://localhost:8000');
 
 /**
  * Health check endpoint
