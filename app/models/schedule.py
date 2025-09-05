@@ -9,5 +9,10 @@ class Schedule(BaseModel):
     empleado: str
     empleado_id: int
 
+class ScheduleCreate(BaseModel):
+    fecha: date
+    turno: str
+    empleado_id: int
+
 class ScheduleResponse(BaseModel):
     schedules: List[Schedule]

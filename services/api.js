@@ -76,3 +76,32 @@ export async function getSchedules(token) {
     throw new Error(`Failed to get schedules: ${error.message}`);
   }
 }
+
+/**
+ * Create a new schedule
+ * @param {string} token - Authentication token
+ * @param {Object} scheduleData - Schedule data {fecha, turno, empleado_id}
+ * @returns {Promise<Object>} JSON response with created schedule
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function createSchedule(token, scheduleData) {
+  try {
+    const response = await fetch(`${BASE_URL}/schedules`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(scheduleData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to create schedule: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to create schedule: ${error.message}`);
+  }
+}
