@@ -2,11 +2,11 @@ import { StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
-export default function HorariosScreen() {
+export default function TareasScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title" style={styles.centeredText}>
-        Pantalla de Horarios
+        Pantalla de Tareas
       </ThemedText>
     </ThemedView>
   );

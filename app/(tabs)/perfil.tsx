@@ -2,11 +2,11 @@ import { StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
-export default function WorkSchedulesScreen() {
+export default function PerfilScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title" style={styles.centeredText}>
-        Horarios de trabajo
+        Pantalla de Perfil
       </ThemedText>
     </ThemedView>
   );
