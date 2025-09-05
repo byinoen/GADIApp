@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import Response
 from app.models.user import UserLogin, UserPublic
 from app.security.deps import require_roles
 
@@ -11,6 +12,15 @@ USERS_DB = {
     "admin@example.com": {"id": 3, "password": "1234", "role": "admin"},
 }
 
+
+@router.options("/login")
+def login_options():
+    """Handle CORS preflight for login endpoint"""
+    return Response(headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Demo-Token",
+    })
 
 @router.post("/login")
 def login(user_login: UserLogin):

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from app.models.schedule import Schedule, ScheduleCreate, ScheduleResponse
 from app.models.user import UserPublic
 from app.security.deps import get_current_user
@@ -33,6 +34,15 @@ EMPLOYEE_NAMES = {
     4: "Ana Martínez",
     5: "Pedro Sánchez"
 }
+
+@router.options("")
+def schedules_options():
+    """Handle CORS preflight for schedules endpoint"""
+    return Response(headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Demo-Token",
+    })
 
 @router.get("", response_model=ScheduleResponse)
 def get_schedules(current_user: UserPublic = Depends(get_current_user)):
