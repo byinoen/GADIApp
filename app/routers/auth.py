@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.models.user import UserLogin, UserPublic
+from app.security.deps import require_roles
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -30,4 +31,13 @@ def login(user_login: UserLogin):
     return {
         "token": "demo",
         "user": user_public.model_dump()
+    }
+
+
+@router.get("/admin-only")
+def admin_only_route(current_user: UserPublic = Depends(require_roles("Administrador"))):
+    """Demo protected route - only accessible to Administrador role"""
+    return {
+        "message": "Acceso concedido para administrador",
+        "user": current_user.model_dump()
     }
