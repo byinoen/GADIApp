@@ -17,7 +17,8 @@ export default function HorariosScreen() {
   };
 
   const handleLoginPress = () => {
-    router.push('/login');
+    // No longer needed - login will show automatically when not authenticated
+    Alert.alert('Información', 'El login aparece automáticamente cuando no hay sesión activa');
   };
 
   const handleLogoutPress = () => {

@@ -30,7 +30,7 @@ export default function LoginScreen() {
       // Save token and user in context
       login(response.user, response.token);
       
-      // Show success message
+      // Show success message - navigation will happen automatically via AuthNavigator
       Alert.alert('Éxito', 'Sesión iniciada');
       
     } catch (error) {
