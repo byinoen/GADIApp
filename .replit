@@ -17,6 +17,10 @@ author = "agent"
 task = "workflow.run"
 args = "FastAPI Backend"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Expo Simple"
+
 [[workflows.workflow]]
 name = "FastAPI Backend"
 author = "agent"
@@ -25,6 +29,17 @@ author = "agent"
 task = "shell.exec"
 args = "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 waitForPort = 8000
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Expo Simple"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx expo start --tunnel --clear"
 
 [workflows.workflow.metadata]
 outputType = "console"
