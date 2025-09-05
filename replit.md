@@ -1,37 +1,50 @@
-# GADIApp - Expo React Native Project
+# GADIApp - React Native Frontend with FastAPI Backend
 
 ## Overview
-This is an Expo React Native application with cross-platform support (iOS, Android, and Web). The project uses file-based routing with Expo Router and TypeScript.
+This is a full-stack application with an Expo React Native frontend and a FastAPI backend. The frontend provides a Spanish-language interface with tab navigation, while the backend offers REST API endpoints.
 
 ## Project Architecture
+### Frontend
 - **Framework**: Expo ~53.0.22 with React Native 0.79.6
 - **Routing**: Expo Router with file-based routing
-- **UI**: Tab-based navigation with themed components
+- **UI**: Tab-based navigation with Spanish labels
 - **Platform Support**: iOS, Android, and Web
 - **Language**: TypeScript with strict mode enabled
 
+### Backend
+- **Framework**: FastAPI with Python 3.11
+- **API**: REST endpoints with health checking
+- **Development**: Auto-reload with uvicorn
+
 ## Development Setup
-- **Development Server**: Expo web development server on port 5000
-- **Host Configuration**: Uses LAN mode for Replit proxy compatibility
-- **Bundle Type**: Metro bundler for web
+- **Frontend Server**: Expo web development server on port 5000
+- **Backend Server**: FastAPI/uvicorn server on port 8000
+- **Host Configuration**: Frontend uses LAN mode for Replit proxy compatibility
 
 ## Recent Changes (September 5, 2025)
-- Set up project for Replit environment
-- Configured Expo web development server with proper host settings
-- Created workflow for development server on port 5000
-- Configured deployment for production builds
-- Installed serve package for static file serving in production
+- Added FastAPI backend with health endpoint
+- Implemented Spanish tab navigation (Horarios, Tareas, Perfil)
+- Added interactive button with Spanish alerts
+- Configured dual workflows for frontend and backend
+- Set up Python environment with required dependencies
 
 ## User Preferences
+- Spanish language interface throughout
 - Standard Expo/React Native development workflow
-- Web-first development approach for this setup
+- FastAPI for backend API development
 
 ## Project Structure
-- `app/` - Main application code with file-based routing
+- `app/` - React Native frontend code with file-based routing
+  - `(tabs)/` - Tab navigation screens (index.tsx, tareas.tsx, perfil.tsx)
+- `app/main.py` - FastAPI backend application
 - `components/` - Reusable UI components
 - `constants/` - App constants and theming
 - `hooks/` - Custom React hooks
 - `assets/` - Images, fonts, and other static assets
+- `requirements.txt` - Python dependencies
+
+## API Endpoints
+- `GET /health` - Returns {"status": "ok"} for health checking
 
 ## Deployment Configuration
 - **Type**: Autoscale (for stateless web application)
