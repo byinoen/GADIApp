@@ -1,25 +1,5 @@
-import { StyleSheet } from 'react-native';
+import HomeScreen from '@/HomeScreen';
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.centeredText}>
-        Bienvenido a la aplicación
-      </ThemedText>
-    </ThemedView>
-  );
+export default function TabHomeScreen() {
+  return <HomeScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  centeredText: {
-    textAlign: 'center',
-  },
-});
