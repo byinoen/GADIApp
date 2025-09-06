@@ -5,9 +5,11 @@ const getBaseURL = () => {
     // We're in Replit environment, use the current domain with port 8000
     const protocol = window.location.protocol; // https: or http:
     const hostname = window.location.hostname; // replit domain
+    console.log(`API Base URL: ${protocol}//${hostname}:8000`);
     return `${protocol}//${hostname}:8000`;
   }
   // Local development
+  console.log('API Base URL: http://localhost:8000');
   return 'http://localhost:8000';
 };
 
