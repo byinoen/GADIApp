@@ -52,6 +52,8 @@ export default function WorkSchedulesScreen() {
 
   const handleCreateSchedule = async (e) => {
     e.preventDefault();
+    console.log('Form submission started:', formData);
+    
     if (!formData.fecha) {
       alert('Por favor ingrese una fecha');
       return;
@@ -59,12 +61,14 @@ export default function WorkSchedulesScreen() {
 
     setSubmitting(true);
     try {
-      await createSchedule(token, {
+      console.log('Creating schedule with token:', token);
+      const result = await createSchedule(token, {
         fecha: formData.fecha,
         turno: formData.turno,
         empleado_id: parseInt(formData.empleado_id)
       });
       
+      console.log('Schedule creation result:', result);
       alert('Turno añadido exitosamente');
       setShowForm(false);
       setFormData({
@@ -74,7 +78,8 @@ export default function WorkSchedulesScreen() {
       });
       loadSchedules(); // Refresh the list
     } catch (error) {
-      alert('Error al añadir turno');
+      console.error('Error creating schedule:', error);
+      alert('Error al añadir turno: ' + error.message);
     } finally {
       setSubmitting(false);
     }
