@@ -52,7 +52,6 @@ export default function WorkSchedulesScreen() {
 
   const handleCreateSchedule = async (e) => {
     e.preventDefault();
-    console.log('Form submission started:', formData);
     
     if (!formData.fecha) {
       alert('Por favor ingrese una fecha');
@@ -61,14 +60,12 @@ export default function WorkSchedulesScreen() {
 
     setSubmitting(true);
     try {
-      console.log('Creating schedule with token:', token);
-      const result = await createSchedule(token, {
+      await createSchedule(token, {
         fecha: formData.fecha,
         turno: formData.turno,
         empleado_id: parseInt(formData.empleado_id)
       });
       
-      console.log('Schedule creation result:', result);
       alert('Turno añadido exitosamente');
       setShowForm(false);
       setFormData({
@@ -78,7 +75,6 @@ export default function WorkSchedulesScreen() {
       });
       loadSchedules(); // Refresh the list
     } catch (error) {
-      console.error('Error creating schedule:', error);
       alert('Error al añadir turno: ' + error.message);
     } finally {
       setSubmitting(false);
@@ -128,10 +124,7 @@ export default function WorkSchedulesScreen() {
           {canCreateSchedules && (
             <button
               className="add-button"
-              onClick={() => {
-                console.log('Add turno button clicked, opening modal');
-                setShowForm(true);
-              }}
+              onClick={() => setShowForm(true)}
             >
               ➕ Añadir turno
             </button>
@@ -167,7 +160,6 @@ export default function WorkSchedulesScreen() {
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">Añadir Nuevo Turno</h2>
-            {console.log('Modal is being rendered!')}
             
             <form onSubmit={handleCreateSchedule}>
               <div className="input-group">
