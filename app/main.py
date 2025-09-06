@@ -11,8 +11,8 @@ async def health_check():
 
 @auth_router.post("/login")
 async def login_user(request: dict):
-    email = request.get("email")
-    password = request.get("password")
+    email = request.get("email", "")
+    password = request.get("password", "")
     
     # Simple demo authentication
     users = {
