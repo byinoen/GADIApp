@@ -246,41 +246,54 @@
 .modal-buttons {
   display: flex;
   gap: 12px;
+  margin-top: 20px;
+  width: 100%;
 }
 
 .cancel-button,
 .submit-button {
   flex: 1;
-  padding: 12px;
+  padding: 15px 20px;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  border: 2px solid transparent;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cancel-button {
   background-color: #f0f0f0;
-  border: 1px solid #ddd;
+  border: 2px solid #ddd;
   color: #666;
 }
 
 .cancel-button:hover {
   background-color: #e0e0e0;
+  border-color: #bbb;
 }
 
 .submit-button {
   background-color: #007AFF;
-  border: 1px solid #007AFF;
+  border: 2px solid #007AFF;
   color: white;
+  font-weight: bold;
 }
 
 .submit-button:hover:not(.submit-button-disabled) {
   background-color: #0051D5;
+  border-color: #0051D5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 122, 255, 0.3);
 }
 
 .submit-button-disabled {
   background-color: #ccc;
   border-color: #ccc;
   cursor: not-allowed;
+  opacity: 0.6;
 }
