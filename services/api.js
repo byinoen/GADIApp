@@ -1,19 +1,5 @@
 // API service for connecting to FastAPI backend
-// In Replit, use the current domain but replace port 5000 with 8000 for backend
-const getBaseURL = () => {
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-    // We're in Replit environment, use the current domain with port 8000
-    const protocol = window.location.protocol; // https: or http:
-    const hostname = window.location.hostname; // replit domain
-    console.log(`API Base URL: ${protocol}//${hostname}:8000`);
-    return `${protocol}//${hostname}:8000`;
-  }
-  // Local development
-  console.log('API Base URL: http://localhost:8000');
-  return 'http://localhost:8000';
-};
-
-const BASE_URL = getBaseURL();
+export const BASE_URL = "http://127.0.0.1:8000";
 
 /**
  * Health check endpoint
