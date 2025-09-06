@@ -164,10 +164,10 @@ export default function WorkSchedulesScreen() {
       </div>
 
       {showForm && (
-        console.log('Rendering modal form') ||
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">Añadir Nuevo Turno</h2>
+            {console.log('Modal is being rendered!')}
             
             <form onSubmit={handleCreateSchedule}>
               <div className="input-group">

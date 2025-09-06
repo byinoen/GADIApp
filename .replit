@@ -37,13 +37,13 @@ outputType = "webview"
 name = "FastAPI Backend"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "console"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 waitForPort = 8000
-
-[workflows.workflow.metadata]
-outputType = "console"
 
 [[ports]]
 localPort = 5000
