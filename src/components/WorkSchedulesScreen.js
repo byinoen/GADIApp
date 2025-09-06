@@ -128,9 +128,12 @@ export default function WorkSchedulesScreen() {
           {canCreateSchedules && (
             <button
               className="add-button"
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                console.log('Add turno button clicked, opening modal');
+                setShowForm(true);
+              }}
             >
-              Añadir turno
+              ➕ Añadir turno
             </button>
           )}
         </div>
@@ -161,6 +164,7 @@ export default function WorkSchedulesScreen() {
       </div>
 
       {showForm && (
+        console.log('Rendering modal form') ||
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">Añadir Nuevo Turno</h2>

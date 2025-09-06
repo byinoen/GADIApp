@@ -60,17 +60,20 @@
 .add-button {
   background-color: white;
   color: #007AFF;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  border: 2px solid white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .add-button:hover {
-  background-color: #f0f0f0;
+  background-color: #f0f8ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .refresh-button {
@@ -172,9 +175,11 @@
   border-radius: 12px;
   padding: 20px;
   width: 90%;
-  max-width: 400px;
-  max-height: 80vh;
+  max-width: 500px;
+  max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .modal-title {
@@ -278,10 +283,12 @@
 }
 
 .submit-button {
-  background-color: #007AFF;
-  border: 2px solid #007AFF;
-  color: white;
-  font-weight: bold;
+  background-color: #007AFF !important;
+  border: 2px solid #007AFF !important;
+  color: white !important;
+  font-weight: bold !important;
+  z-index: 9999;
+  position: relative;
 }
 
 .submit-button:hover:not(.submit-button-disabled) {
