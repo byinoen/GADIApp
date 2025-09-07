@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getTasks, createTask, updateTaskStatus } from '../services/api';
+import { getTasks, createTask, updateTaskStatus, getRegisters, getRegister } from '../services/api';
 import './TasksScreen.css';
 
 function TasksScreen() {
@@ -15,8 +15,15 @@ function TasksScreen() {
     fecha: '',
     prioridad: 'media',
     is_recurring: false,
-    frequency: 'weekly'
+    frequency: 'weekly',
+    register_id: '',
+    procedure_id: '',
+    requires_signature: false
   });
+  
+  // Register and procedure data
+  const [registers, setRegisters] = useState([]);
+  const [procedures, setProcedures] = useState([]);
   const { token, user } = useAuth();
 
   const EMPLEADOS_OPTIONS = [
@@ -76,7 +83,10 @@ function TasksScreen() {
         fecha: formData.fecha,
         prioridad: formData.prioridad,
         is_recurring: formData.is_recurring,
-        frequency: formData.is_recurring ? formData.frequency : null
+        frequency: formData.is_recurring ? formData.frequency : null,
+        register_id: formData.register_id ? parseInt(formData.register_id) : null,
+        procedure_id: formData.procedure_id ? parseInt(formData.procedure_id) : null,
+        requires_signature: formData.requires_signature
       };
       
       const response = await createTask(token, taskData);
@@ -159,7 +169,31 @@ function TasksScreen() {
 
   useEffect(() => {
     loadTasks();
+    loadRegisters();
   }, [token, user]);
+
+  const loadRegisters = async () => {
+    try {
+      const response = await getRegisters(token);
+      setRegisters(response.registers || []);
+    } catch (error) {
+      console.error('Error loading registers:', error);
+    }
+  };
+
+  const loadProcedures = async (registerId) => {
+    if (!registerId) {
+      setProcedures([]);
+      return;
+    }
+    try {
+      const response = await getRegister(token, registerId);
+      setProcedures(response.procedures || []);
+    } catch (error) {
+      console.error('Error loading procedures:', error);
+      setProcedures([]);
+    }
+  };
 
   if (loading) {
     return (

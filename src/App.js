@@ -3,12 +3,14 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './components/LoginScreen';
 import WorkSchedulesScreen from './components/WorkSchedulesScreen';
 import TasksScreen from './components/TasksScreen';
+import RegisterScreen from './components/RegisterScreen';
 import './App.css';
 
 // Main app component that handles navigation
 function AppContent() {
   const { isAuthenticated, user, logout } = useAuth();
   const [currentView, setCurrentView] = useState('schedules');
+  const isManager = user?.role === 'admin' || user?.role === 'encargado';
 
   if (!isAuthenticated) {
     return <LoginScreen />;
@@ -32,6 +34,12 @@ function AppContent() {
             >
               ✅ Tareas
             </button>
+            <button 
+              className={`nav-tab ${currentView === 'registers' ? 'active' : ''}`}
+              onClick={() => setCurrentView('registers')}
+            >
+              📋 Registros
+            </button>
           </div>
           <div className="nav-user">
             <span className="user-info">
@@ -45,7 +53,9 @@ function AppContent() {
       </nav>
       
       <main className="app-main">
-        {currentView === 'schedules' ? <WorkSchedulesScreen /> : <TasksScreen />}
+        {currentView === 'schedules' && <WorkSchedulesScreen />}
+        {currentView === 'tasks' && <TasksScreen />}
+        {currentView === 'registers' && <RegisterScreen />}
       </main>
     </div>
   );
