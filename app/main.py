@@ -367,7 +367,10 @@ async def create_task(task: dict, x_demo_token: str = Header(None)):
         "parent_task_id": None,
         "register_id": task.get("register_id", None),
         "procedure_id": task.get("procedure_id", None),
-        "requires_signature": task.get("requires_signature", False)
+        "requires_signature": task.get("requires_signature", False),
+        "start_time": None,
+        "finish_time": None,
+        "actual_duration_minutes": None
     }
     
     # Add to database
@@ -388,6 +391,99 @@ async def update_task_status(task_id: int, update_data: dict, x_demo_token: str 
         task["estado"] = update_data["estado"]
     
     return {"message": "Task updated", "task": task}
+
+@tasks_router.post("/{task_id}/start")
+async def start_task(task_id: int, x_demo_token: str = Header(None)):
+    """Start task timer"""
+    task = next((t for t in tasks_db if t["id"] == task_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Update task to in_progress with start time
+    task["estado"] = "en_progreso"
+    task["start_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    task["finish_time"] = None
+    task["actual_duration_minutes"] = None
+    
+    return {"message": "Task started", "task": task}
+
+@tasks_router.post("/{task_id}/finish")
+async def finish_task(task_id: int, completion_data: dict, x_demo_token: str = Header(None)):
+    """Finish task and record completion time"""
+    task = next((t for t in tasks_db if t["id"] == task_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Record finish time and calculate duration
+    finish_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    task["finish_time"] = finish_time
+    
+    # Calculate duration if task was started
+    if task.get("start_time"):
+        start_dt = datetime.strptime(task["start_time"], "%Y-%m-%d %H:%M:%S")
+        finish_dt = datetime.strptime(finish_time, "%Y-%m-%d %H:%M:%S")
+        duration_minutes = int((finish_dt - start_dt).total_seconds() / 60)
+        task["actual_duration_minutes"] = duration_minutes
+    
+    # Update task status
+    task["estado"] = "completada"
+    
+    # If task has register and procedure, create register entry automatically
+    if task.get("register_id") and task.get("procedure_id") and task.get("requires_signature"):
+        # Get employee name
+        empleado_name = empleados_map.get(task["empleado_id"], f"Empleado {task['empleado_id']}")
+        
+        # Generate new entry ID
+        new_entry_id = max([entry["id"] for entry in register_entries_db], default=0) + 1
+        
+        # Create register entry
+        new_entry = {
+            "id": new_entry_id,
+            "register_id": task["register_id"],
+            "task_id": task_id,
+            "procedure_id": task["procedure_id"],
+            "empleado_id": task["empleado_id"],
+            "empleado_name": empleado_name,
+            "fecha_completado": finish_time,
+            "firma_empleado": completion_data.get("firma_empleado", "Firmado digitalmente"),
+            "observaciones": completion_data.get("observaciones", ""),
+            "resultado": completion_data.get("resultado", "completado"),
+            "tiempo_real": f"{task['actual_duration_minutes']} minutos" if task.get("actual_duration_minutes") else None,
+            "created_at": finish_time
+        }
+        
+        # Add to database
+        register_entries_db.append(new_entry)
+        
+        return {
+            "message": "Task completed and signed", 
+            "task": task, 
+            "register_entry": new_entry,
+            "requires_signature": True
+        }
+    
+    return {"message": "Task completed", "task": task, "requires_signature": False}
+
+@tasks_router.get("/{task_id}/details")
+async def get_task_details(task_id: int, x_demo_token: str = Header(None)):
+    """Get detailed task information including procedure details"""
+    task = next((t for t in tasks_db if t["id"] == task_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Get procedure details if available
+    procedure = None
+    register = None
+    if task.get("procedure_id"):
+        procedure = next((p for p in procedures_db if p["id"] == task["procedure_id"]), None)
+    if task.get("register_id"):
+        register = next((r for r in registers_db if r["id"] == task["register_id"]), None)
+    
+    return {
+        "task": task,
+        "procedure": procedure,
+        "register": register
+    }
 
 # Manager Inbox Routes
 @inbox_router.get("")
