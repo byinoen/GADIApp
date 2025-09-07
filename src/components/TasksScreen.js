@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getTasks, createTask, updateTaskStatus, getRegisters, getRegister } from '../services/api';
+import TaskDetailModal from './TaskDetailModal';
 import './TasksScreen.css';
 
 function TasksScreen() {
@@ -24,6 +25,10 @@ function TasksScreen() {
   // Register and procedure data
   const [registers, setRegisters] = useState([]);
   const [procedures, setProcedures] = useState([]);
+  
+  // Task detail modal
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showTaskDetail, setShowTaskDetail] = useState(false);
   const { token, user } = useAuth();
 
   const EMPLEADOS_OPTIONS = [
@@ -64,6 +69,25 @@ function TasksScreen() {
     } catch (error) {
       alert('Error al cargar las tareas');
     }
+  };
+
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setShowTaskDetail(true);
+  };
+
+  const handleTaskUpdate = (updatedTask) => {
+    // Update the task in the tasks list
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      )
+    );
+  };
+
+  const handleCloseTaskDetail = () => {
+    setSelectedTask(null);
+    setShowTaskDetail(false);
   };
 
   const handleCreateTask = async (e) => {
@@ -241,7 +265,11 @@ function TasksScreen() {
         ) : (
           <div className="tasks-grid">
             {tasks.map((task) => (
-              <div key={task.id} className="task-card">
+              <div 
+                key={task.id} 
+                className="task-card task-clickable" 
+                onClick={() => handleTaskClick(task)}
+              >
                 <div className="task-header">
                   <div className="task-title-row">
                     <h3 className="task-title">
@@ -270,6 +298,22 @@ function TasksScreen() {
                 </div>
                 
                 <p className="task-description">{task.descripcion}</p>
+                
+                {(task.register_id || task.procedure_id) && (
+                  <div className="task-register-info">
+                    📋 Con procedimiento documentado {task.requires_signature && '✍️'}
+                  </div>
+                )}
+                
+                {task.estado === 'en_progreso' && task.start_time && (
+                  <div className="task-timer-info">
+                    ⏱️ En progreso desde {new Date(task.start_time).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
+                  </div>
+                )}
+                
+                <div className="task-click-hint">
+                  👆 Haz clic para ver detalles y {task.estado === 'pendiente' ? 'iniciar' : task.estado === 'en_progreso' ? 'completar' : 'revisar'} la tarea
+                </div>
                 
                 <div className="task-footer">
                   <span 
@@ -484,6 +528,15 @@ function TasksScreen() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Task Detail Modal */}
+      {showTaskDetail && selectedTask && (
+        <TaskDetailModal 
+          task={selectedTask}
+          onClose={handleCloseTaskDetail}
+          onTaskUpdate={handleTaskUpdate}
+        />
       )}
     </div>
   );

@@ -438,3 +438,66 @@ export async function exportRegisterPDF(token, registerId, fechaInicio = null, f
     throw new Error(`Failed to export register PDF: ${error.message}`);
   }
 }
+
+// Task Timer API
+export async function getTaskDetails(token, taskId) {
+  try {
+    const response = await fetch(`${BASE_URL}/tasks/${taskId}/details`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get task details: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get task details: ${error.message}`);
+  }
+}
+
+export async function startTask(token, taskId) {
+  try {
+    const response = await fetch(`${BASE_URL}/tasks/${taskId}/start`, {
+      method: 'POST',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to start task: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to start task: ${error.message}`);
+  }
+}
+
+export async function finishTask(token, taskId, completionData = {}) {
+  try {
+    const response = await fetch(`${BASE_URL}/tasks/${taskId}/finish`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(completionData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to finish task: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to finish task: ${error.message}`);
+  }
+}
