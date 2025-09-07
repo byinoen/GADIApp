@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './components/LoginScreen';
 import WorkSchedulesScreen from './components/WorkSchedulesScreen';
+import TasksScreen from './components/TasksScreen';
 import './App.css';
 
 // Main app component that handles navigation
 function AppContent() {
   const { isAuthenticated, user, logout } = useAuth();
+  const [currentView, setCurrentView] = useState('schedules');
 
   if (!isAuthenticated) {
     return <LoginScreen />;
@@ -17,6 +19,20 @@ function AppContent() {
       <nav className="app-nav">
         <div className="nav-content">
           <h1 className="app-title">GADIApp</h1>
+          <div className="nav-tabs">
+            <button 
+              className={`nav-tab ${currentView === 'schedules' ? 'active' : ''}`}
+              onClick={() => setCurrentView('schedules')}
+            >
+              📅 Horarios
+            </button>
+            <button 
+              className={`nav-tab ${currentView === 'tasks' ? 'active' : ''}`}
+              onClick={() => setCurrentView('tasks')}
+            >
+              ✅ Tareas
+            </button>
+          </div>
           <div className="nav-user">
             <span className="user-info">
               {user?.email} ({user?.role})
@@ -29,7 +45,7 @@ function AppContent() {
       </nav>
       
       <main className="app-main">
-        <WorkSchedulesScreen />
+        {currentView === 'schedules' ? <WorkSchedulesScreen /> : <TasksScreen />}
       </main>
     </div>
   );

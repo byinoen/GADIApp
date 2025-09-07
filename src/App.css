@@ -30,12 +30,44 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
+  gap: 20px;
 }
 
 .app-title {
   font-size: 24px;
   font-weight: bold;
   margin: 0;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-tab {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-tab:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.nav-tab.active {
+  background-color: white;
+  color: #007AFF;
+  border-color: white;
+  font-weight: 600;
 }
 
 .nav-user {

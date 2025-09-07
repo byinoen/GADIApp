@@ -119,3 +119,94 @@ export async function createSchedule(token, scheduleData) {
     throw new Error(`Failed to create schedule: ${error.message}`);
   }
 }
+
+/**
+ * Get tasks with optional employee filtering
+ * @param {string} token - Authentication token
+ * @param {number|null} empleadoId - Optional employee ID to filter tasks
+ * @returns {Promise<Object>} JSON response with tasks list
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function getTasks(token, empleadoId = null) {
+  try {
+    let url = `${BASE_URL}/tasks`;
+    if (empleadoId) {
+      url += `?empleado_id=${empleadoId}`;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get tasks: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get tasks: ${error.message}`);
+  }
+}
+
+/**
+ * Create a new task
+ * @param {string} token - Authentication token
+ * @param {Object} taskData - Task data {titulo, descripcion, empleado_id, fecha, prioridad}
+ * @returns {Promise<Object>} JSON response with created task
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function createTask(token, taskData) {
+  try {
+    const response = await fetch(`${BASE_URL}/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(taskData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to create task: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to create task: ${error.message}`);
+  }
+}
+
+/**
+ * Update task status
+ * @param {string} token - Authentication token
+ * @param {number} taskId - Task ID to update
+ * @param {string} status - New status (pendiente, en_progreso, completada)
+ * @returns {Promise<Object>} JSON response with updated task
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function updateTaskStatus(token, taskId, status) {
+  try {
+    const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify({ estado: status })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to update task: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to update task: ${error.message}`);
+  }
+}
