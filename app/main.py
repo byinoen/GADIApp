@@ -5,6 +5,7 @@ from datetime import datetime
 health_router = APIRouter()
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 schedules_router = APIRouter(prefix="/schedules", tags=["schedules"])
+tasks_router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 # In-memory storage for schedules
 schedules_db = [
@@ -21,6 +22,13 @@ empleados_map = {
     4: "Ana Martínez",
     5: "Pedro Sánchez"
 }
+
+# In-memory storage for tasks
+tasks_db = [
+    {"id": 1, "titulo": "Revisar inventario", "descripcion": "Contar y verificar productos en almacén", "empleado_id": 1, "empleado": "Juan Pérez", "fecha": "2025-09-08", "estado": "pendiente", "prioridad": "media"},
+    {"id": 2, "titulo": "Limpiar área de trabajo", "descripcion": "Mantener limpieza en zona de producción", "empleado_id": 2, "empleado": "María García", "fecha": "2025-09-08", "estado": "en_progreso", "prioridad": "baja"},
+    {"id": 3, "titulo": "Preparar reporte diario", "descripcion": "Elaborar resumen de actividades del turno", "empleado_id": 1, "empleado": "Juan Pérez", "fecha": "2025-09-09", "estado": "completada", "prioridad": "alta"}
+]
 
 @health_router.get("/health")
 async def health_check():
@@ -71,6 +79,55 @@ async def create_schedule(schedule: dict, x_demo_token: str = Header(None)):
     
     return {"message": "Schedule created", "schedule": new_schedule}
 
+@tasks_router.get("")
+async def get_tasks(empleado_id: int = None, x_demo_token: str = Header(None)):
+    # If empleado_id is provided, filter tasks for that employee
+    if empleado_id:
+        filtered_tasks = [task for task in tasks_db if task["empleado_id"] == empleado_id]
+        return {"tasks": sorted(filtered_tasks, key=lambda x: (x["fecha"], x["prioridad"]))}
+    
+    # Return all tasks sorted by date and priority
+    sorted_tasks = sorted(tasks_db, key=lambda x: (x["fecha"], x["prioridad"]))
+    return {"tasks": sorted_tasks}
+
+@tasks_router.post("")
+async def create_task(task: dict, x_demo_token: str = Header(None)):
+    # Generate new ID
+    new_id = max([t["id"] for t in tasks_db], default=0) + 1
+    
+    # Get employee name from ID
+    empleado_name = empleados_map.get(task["empleado_id"], f"Empleado {task['empleado_id']}")
+    
+    # Create new task
+    new_task = {
+        "id": new_id,
+        "titulo": task["titulo"],
+        "descripcion": task.get("descripcion", ""),
+        "empleado_id": task["empleado_id"],
+        "empleado": empleado_name,
+        "fecha": task["fecha"],
+        "estado": "pendiente",
+        "prioridad": task.get("prioridad", "media")
+    }
+    
+    # Add to database
+    tasks_db.append(new_task)
+    
+    return {"message": "Task created", "task": new_task}
+
+@tasks_router.put("/{task_id}")
+async def update_task_status(task_id: int, update_data: dict, x_demo_token: str = Header(None)):
+    # Find task
+    task = next((t for t in tasks_db if t["id"] == task_id), None)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Update status
+    if "estado" in update_data:
+        task["estado"] = update_data["estado"]
+    
+    return {"message": "Task updated", "task": task}
+
 # Create FastAPI app
 app = FastAPI()
 
@@ -87,5 +144,6 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(schedules_router)
+app.include_router(tasks_router)
 
 print("Starting FastAPI backend with CORS configuration")
