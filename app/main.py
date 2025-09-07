@@ -8,6 +8,7 @@ auth_router = APIRouter(prefix="/auth", tags=["auth"])
 schedules_router = APIRouter(prefix="/schedules", tags=["schedules"])
 tasks_router = APIRouter(prefix="/tasks", tags=["tasks"])
 inbox_router = APIRouter(prefix="/inbox", tags=["inbox"])
+registers_router = APIRouter(prefix="/registers", tags=["registers"])
 
 # In-memory storage for schedules
 schedules_db = [
@@ -37,6 +38,93 @@ recurring_tasks_db = []
 
 # In-memory storage for manager inbox (conflict notifications)
 manager_inbox_db = []
+
+# In-memory storage for registers and procedures
+registers_db = [
+    {
+        "id": 1,
+        "nombre": "Registro de Tratamientos de Cultivos",
+        "tipo": "treatment",
+        "descripcion": "Registro para documentar todos los tratamientos aplicados a los cultivos",
+        "activo": True,
+        "created_at": "2025-09-07 12:00:00"
+    },
+    {
+        "id": 2,
+        "nombre": "Registro de Mantenimiento de Equipos",
+        "tipo": "maintenance", 
+        "descripcion": "Registro para documentar el mantenimiento y revisión de equipos",
+        "activo": True,
+        "created_at": "2025-09-07 12:00:00"
+    }
+]
+
+# In-memory storage for recipes/procedures
+procedures_db = [
+    {
+        "id": 1,
+        "register_id": 1,
+        "nombre": "Aplicación de Fungicida",
+        "receta": {
+            "ingredientes": [
+                {"nombre": "Fungicida XYZ", "cantidad": "2 litros", "concentracion": "0.5%"},
+                {"nombre": "Agua", "cantidad": "400 litros", "pureza": "limpia"}
+            ],
+            "proporcion": "0.5% de concentración en agua",
+            "volumen_total": "400 litros"
+        },
+        "procedimiento": [
+            "Usar equipo de protección personal completo (guantes, mascarilla, gafas)",
+            "Mezclar el fungicida con agua en tanque limpio",
+            "Agitar bien la mezcla durante 5 minutos",
+            "Aplicar con pulverizador a presión uniforme",
+            "Cubrir toda la superficie del cultivo de manera homogénea",
+            "Lavar el equipo después del uso"
+        ],
+        "precauciones": [
+            "OBLIGATORIO: Usar equipo de protección personal",
+            "No aplicar con viento fuerte (>15 km/h)",
+            "No aplicar antes de lluvia",
+            "Mantener alejado de fuentes de agua potable",
+            "Lavar manos y cara después del trabajo"
+        ],
+        "tiempo_estimado": "2 horas",
+        "created_at": "2025-09-07 12:00:00"
+    },
+    {
+        "id": 2,
+        "register_id": 2,
+        "nombre": "Revisión de Tractor",
+        "receta": {
+            "materiales": [
+                {"nombre": "Aceite motor", "cantidad": "5 litros", "especificacion": "10W-40"},
+                {"nombre": "Filtro de aceite", "cantidad": "1 unidad", "codigo": "OF-123"},
+                {"nombre": "Filtro de aire", "cantidad": "1 unidad", "codigo": "AF-456"}
+            ]
+        },
+        "procedimiento": [
+            "Apagar el tractor y esperar que se enfríe",
+            "Revisar nivel de aceite con varilla",
+            "Cambiar aceite si está sucio o bajo",
+            "Inspeccionar filtros de aire y aceite",
+            "Revisar presión de neumáticos",
+            "Verificar funcionamiento de luces",
+            "Probar frenos y dirección",
+            "Registrar kilometraje y horas de uso"
+        ],
+        "precauciones": [
+            "Usar guantes para evitar contacto con aceites",
+            "Asegurar que el motor esté frío antes de trabajar",
+            "Disponer correctamente de aceites usados",
+            "No fumar durante la revisión"
+        ],
+        "tiempo_estimado": "1.5 horas",
+        "created_at": "2025-09-07 12:00:00"
+    }
+]
+
+# In-memory storage for register entries (signed completions)
+register_entries_db = []
 
 @health_router.get("/health")
 async def health_check():
@@ -268,7 +356,10 @@ async def create_task(task: dict, x_demo_token: str = Header(None)):
         "prioridad": task.get("prioridad", "media"),
         "is_recurring": is_recurring,
         "frequency": frequency,
-        "parent_task_id": None
+        "parent_task_id": None,
+        "register_id": task.get("register_id", None),
+        "procedure_id": task.get("procedure_id", None),
+        "requires_signature": task.get("requires_signature", False)
     }
     
     # Add to database
@@ -448,6 +539,118 @@ async def get_schedule_tasks(schedule_id: int, x_demo_token: str = Header(None))
         "tasks": sorted(schedule_tasks, key=lambda x: x["prioridad"])
     }
 
+# Register Management Routes
+@registers_router.get("")
+async def get_registers(x_demo_token: str = Header(None)):
+    """Get all active registers"""
+    active_registers = [reg for reg in registers_db if reg["activo"]]
+    return {"registers": active_registers}
+
+@registers_router.get("/{register_id}")
+async def get_register(register_id: int, x_demo_token: str = Header(None)):
+    """Get a specific register with its procedures"""
+    register = next((reg for reg in registers_db if reg["id"] == register_id), None)
+    if not register:
+        raise HTTPException(status_code=404, detail="Register not found")
+    
+    # Get procedures for this register
+    register_procedures = [proc for proc in procedures_db if proc["register_id"] == register_id]
+    
+    return {
+        "register": register,
+        "procedures": register_procedures
+    }
+
+@registers_router.get("/{register_id}/procedures")
+async def get_register_procedures(register_id: int, x_demo_token: str = Header(None)):
+    """Get all procedures for a specific register"""
+    register_procedures = [proc for proc in procedures_db if proc["register_id"] == register_id]
+    return {"procedures": register_procedures}
+
+@registers_router.get("/{register_id}/entries")
+async def get_register_entries(register_id: int, fecha_inicio: str = None, fecha_fin: str = None, x_demo_token: str = Header(None)):
+    """Get register entries with optional date filtering"""
+    entries = [entry for entry in register_entries_db if entry["register_id"] == register_id]
+    
+    # Filter by date range if provided
+    if fecha_inicio:
+        entries = [entry for entry in entries if entry["fecha_completado"] >= fecha_inicio]
+    if fecha_fin:
+        entries = [entry for entry in entries if entry["fecha_completado"] <= fecha_fin]
+    
+    # Sort by completion date, newest first
+    entries = sorted(entries, key=lambda x: x["fecha_completado"], reverse=True)
+    
+    return {"entries": entries}
+
+@registers_router.post("/{register_id}/entries")
+async def create_register_entry(register_id: int, entry_data: dict, x_demo_token: str = Header(None)):
+    """Create a new register entry (employee signature)"""
+    # Generate new entry ID
+    new_id = max([entry["id"] for entry in register_entries_db], default=0) + 1
+    
+    # Get employee name
+    empleado_name = empleados_map.get(entry_data["empleado_id"], f"Empleado {entry_data['empleado_id']}")
+    
+    # Create new register entry
+    new_entry = {
+        "id": new_id,
+        "register_id": register_id,
+        "task_id": entry_data["task_id"],
+        "procedure_id": entry_data["procedure_id"],
+        "empleado_id": entry_data["empleado_id"],
+        "empleado_name": empleado_name,
+        "fecha_completado": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "firma_empleado": entry_data.get("firma_empleado", "Firmado digitalmente"),
+        "observaciones": entry_data.get("observaciones", ""),
+        "resultado": entry_data.get("resultado", "completado"),  # completado, incompleto, con_observaciones
+        "tiempo_real": entry_data.get("tiempo_real", None),
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    # Add to database
+    register_entries_db.append(new_entry)
+    
+    return {"message": "Register entry created", "entry": new_entry}
+
+@registers_router.post("")
+async def create_register(register_data: dict, x_demo_token: str = Header(None)):
+    """Create a new register"""
+    # Generate new ID
+    new_id = max([reg["id"] for reg in registers_db], default=0) + 1
+    
+    new_register = {
+        "id": new_id,
+        "nombre": register_data["nombre"],
+        "tipo": register_data.get("tipo", "general"),
+        "descripcion": register_data.get("descripcion", ""),
+        "activo": True,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    registers_db.append(new_register)
+    return {"message": "Register created", "register": new_register}
+
+@registers_router.post("/{register_id}/procedures")
+async def create_procedure(register_id: int, procedure_data: dict, x_demo_token: str = Header(None)):
+    """Create a new procedure for a register"""
+    # Generate new ID  
+    new_id = max([proc["id"] for proc in procedures_db], default=0) + 1
+    
+    new_procedure = {
+        "id": new_id,
+        "register_id": register_id,
+        "nombre": procedure_data["nombre"],
+        "receta": procedure_data.get("receta", {}),
+        "procedimiento": procedure_data.get("procedimiento", []),
+        "precauciones": procedure_data.get("precauciones", []),
+        "tiempo_estimado": procedure_data.get("tiempo_estimado", "1 hora"),
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    procedures_db.append(new_procedure)
+    return {"message": "Procedure created", "procedure": new_procedure}
+
 # Create FastAPI app
 app = FastAPI()
 
@@ -466,5 +669,6 @@ app.include_router(auth_router)
 app.include_router(schedules_router)
 app.include_router(tasks_router)
 app.include_router(inbox_router)
+app.include_router(registers_router)
 
 print("Starting FastAPI backend with CORS configuration")
