@@ -210,3 +210,116 @@ export async function updateTaskStatus(token, taskId, status) {
     throw new Error(`Failed to update task: ${error.message}`);
   }
 }
+
+/**
+ * Get tasks for a specific schedule/date
+ * @param {string} token - Authentication token
+ * @param {number} scheduleId - Schedule ID to get tasks for
+ * @returns {Promise<Object>} JSON response with schedule and tasks
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function getScheduleTasks(token, scheduleId) {
+  try {
+    const response = await fetch(`${BASE_URL}/schedules/${scheduleId}/tasks`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get schedule tasks: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get schedule tasks: ${error.message}`);
+  }
+}
+
+/**
+ * Get manager inbox notifications
+ * @param {string} token - Authentication token
+ * @returns {Promise<Object>} JSON response with notifications list
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function getInboxNotifications(token) {
+  try {
+    const response = await fetch(`${BASE_URL}/inbox`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get inbox notifications: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get inbox notifications: ${error.message}`);
+  }
+}
+
+/**
+ * Reassign a conflicted task to another employee
+ * @param {string} token - Authentication token
+ * @param {number} notificationId - Notification ID
+ * @param {number} newEmployeeId - New employee ID to assign task to
+ * @returns {Promise<Object>} JSON response with reassignment result
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function reassignTask(token, notificationId, newEmployeeId) {
+  try {
+    const response = await fetch(`${BASE_URL}/inbox/${notificationId}/reassign`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify({ new_empleado_id: newEmployeeId })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to reassign task: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to reassign task: ${error.message}`);
+  }
+}
+
+/**
+ * Reschedule a conflicted task to a different date
+ * @param {string} token - Authentication token
+ * @param {number} notificationId - Notification ID
+ * @param {string} newDate - New date in YYYY-MM-DD format
+ * @returns {Promise<Object>} JSON response with reschedule result
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function rescheduleTask(token, notificationId, newDate) {
+  try {
+    const response = await fetch(`${BASE_URL}/inbox/${notificationId}/reschedule`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify({ new_fecha: newDate })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to reschedule task: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to reschedule task: ${error.message}`);
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSchedules, createSchedule } from '../services/api';
+import { getSchedules, createSchedule, getScheduleTasks } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './WorkSchedulesScreen.css';
 
@@ -13,6 +13,10 @@ export default function WorkSchedulesScreen() {
     empleado_id: '1'
   });
   const [submitting, setSubmitting] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [scheduleTasks, setScheduleTasks] = useState([]);
+  const [showTasks, setShowTasks] = useState(false);
+  const [loadingTasks, setLoadingTasks] = useState(false);
   const { token, user } = useAuth();
 
   const TURNOS_OPTIONS = [
@@ -47,6 +51,43 @@ export default function WorkSchedulesScreen() {
       setSchedules(response.schedules);
     } catch (error) {
       alert('Error al cargar los horarios');
+    }
+  };
+
+  const handleScheduleClick = async (schedule) => {
+    if (loadingTasks) return;
+    
+    setLoadingTasks(true);
+    setSelectedSchedule(schedule);
+    setShowTasks(true);
+    
+    try {
+      const response = await getScheduleTasks(token, schedule.id);
+      setScheduleTasks(response.tasks);
+    } catch (error) {
+      alert('Error al cargar las tareas del horario');
+      setShowTasks(false);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
+
+  const getPriorityColor = (prioridad) => {
+    switch (prioridad) {
+      case 'alta': return '#ff4444';
+      case 'media': return '#ffaa00';
+      case 'baja': return '#44aa44';
+      default: return '#666';
+    }
+  };
+
+  const getStatusColor = (estado) => {
+    switch (estado) {
+      case 'completada': return '#4CAF50';
+      case 'en_progreso': return '#2196F3';
+      case 'pendiente': return '#ff6b9d';
+      default: return '#666';
     }
   };
 
@@ -144,12 +185,17 @@ export default function WorkSchedulesScreen() {
         ) : (
           <div className="schedules-grid">
             {schedules.map((schedule) => (
-              <div key={schedule.id} className="schedule-card">
+              <div 
+                key={schedule.id} 
+                className="schedule-card schedule-clickable"
+                onClick={() => handleScheduleClick(schedule)}
+              >
                 <div className="schedule-header">
                   <span className="schedule-date">{formatDate(schedule.fecha)}</span>
                   <span className="schedule-shift">{schedule.turno}</span>
                 </div>
                 <p className="schedule-employee">Empleado: {schedule.empleado}</p>
+                <div className="click-hint">📋 Haz clic para ver tareas</div>
               </div>
             ))}
           </div>
@@ -227,6 +273,78 @@ export default function WorkSchedulesScreen() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showTasks && selectedSchedule && (
+        <div className="modal-overlay" onClick={() => setShowTasks(false)}>
+          <div className="modal-content tasks-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">
+                📋 Tareas para {selectedSchedule.empleado}
+              </h2>
+              <p className="modal-subtitle">
+                {formatDate(selectedSchedule.fecha)} - {selectedSchedule.turno}
+              </p>
+            </div>
+
+            {loadingTasks ? (
+              <div className="loading-container">
+                <p>Cargando tareas...</p>
+              </div>
+            ) : scheduleTasks.length === 0 ? (
+              <div className="empty-container">
+                <p className="empty-text">No hay tareas asignadas para este horario</p>
+              </div>
+            ) : (
+              <div className="tasks-list">
+                {scheduleTasks.map((task) => (
+                  <div key={task.id} className="task-item">
+                    <div className="task-item-header">
+                      <h4 className="task-item-title">
+                        {task.is_recurring && '🔄 '}{task.titulo}
+                      </h4>
+                      <div className="task-item-badges">
+                        {task.is_recurring && (
+                          <span className="recurring-badge">
+                            {task.frequency === 'daily' && 'Diario'}
+                            {task.frequency === 'weekly' && 'Semanal'}
+                            {task.frequency === 'monthly' && 'Mensual'}
+                          </span>
+                        )}
+                        <span 
+                          className="priority-badge" 
+                          style={{ backgroundColor: getPriorityColor(task.prioridad) }}
+                        >
+                          {task.prioridad}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p className="task-item-description">{task.descripcion}</p>
+                    
+                    <div className="task-item-footer">
+                      <span 
+                        className="status-badge" 
+                        style={{ backgroundColor: getStatusColor(task.estado) }}
+                      >
+                        {task.estado.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="modal-buttons">
+              <button
+                className="cancel-button"
+                onClick={() => setShowTasks(false)}
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
