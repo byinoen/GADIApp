@@ -377,6 +377,57 @@ function TasksScreen() {
               </div>
 
               <div className="input-group">
+                <label className="input-label">📋 Registro</label>
+                <select
+                  className="form-input"
+                  value={formData.register_id}
+                  onChange={(e) => {
+                    setFormData({...formData, register_id: e.target.value, procedure_id: ''});
+                    loadProcedures(e.target.value);
+                  }}
+                >
+                  <option value="">Sin registro específico</option>
+                  {registers.map(register => (
+                    <option key={register.id} value={register.id}>
+                      {register.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {formData.register_id && (
+                <div className="input-group">
+                  <label className="input-label">🧪 Procedimiento</label>
+                  <select
+                    className="form-input"
+                    value={formData.procedure_id}
+                    onChange={(e) => setFormData({...formData, procedure_id: e.target.value})}
+                  >
+                    <option value="">Seleccionar procedimiento</option>
+                    {procedures.map(procedure => (
+                      <option key={procedure.id} value={procedure.id}>
+                        {procedure.nombre} ({procedure.tiempo_estimado})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {formData.register_id && (
+                <div className="input-group">
+                  <label className="input-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.requires_signature}
+                      onChange={(e) => setFormData({...formData, requires_signature: e.target.checked})}
+                      style={{ marginRight: '8px' }}
+                    />
+                    ✍️ Requiere firma del empleado
+                  </label>
+                </div>
+              )}
+
+              <div className="input-group">
                 <label className="input-label">
                   <input
                     type="checkbox"
