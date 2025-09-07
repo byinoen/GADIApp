@@ -7,6 +7,7 @@ health_router = APIRouter()
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 schedules_router = APIRouter(prefix="/schedules", tags=["schedules"])
 tasks_router = APIRouter(prefix="/tasks", tags=["tasks"])
+inbox_router = APIRouter(prefix="/inbox", tags=["inbox"])
 
 # In-memory storage for schedules
 schedules_db = [
@@ -33,6 +34,9 @@ tasks_db = [
 
 # In-memory storage for recurring task templates
 recurring_tasks_db = []
+
+# In-memory storage for manager inbox (conflict notifications)
+manager_inbox_db = []
 
 @health_router.get("/health")
 async def health_check():
@@ -124,6 +128,36 @@ def calculate_next_date(current_date: str, frequency: str) -> str:
     
     return next_date.strftime("%Y-%m-%d")
 
+def is_employee_working(empleado_id: int, fecha: str) -> bool:
+    """Check if employee is scheduled to work on a specific date"""
+    for schedule in schedules_db:
+        if schedule["empleado_id"] == empleado_id and schedule["fecha"] == fecha:
+            return True
+    return False
+
+def create_conflict_notification(task_data: dict, conflict_type: str):
+    """Create a conflict notification for managers"""
+    notification_id = max([notif["id"] for notif in manager_inbox_db], default=0) + 1
+    
+    empleado_name = empleados_map.get(task_data["empleado_id"], f"Empleado {task_data['empleado_id']}")
+    
+    notification = {
+        "id": notification_id,
+        "type": conflict_type,  # "assignment_conflict" or "recurring_conflict"
+        "task_data": task_data,
+        "empleado_id": task_data["empleado_id"],
+        "empleado_name": empleado_name,
+        "fecha": task_data["fecha"],
+        "message": f"No se puede asignar tarea '{task_data['titulo']}' a {empleado_name} el {task_data['fecha']} - no está programado para trabajar",
+        "status": "pending",  # pending, resolved
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "resolved_at": None,
+        "resolution": None
+    }
+    
+    manager_inbox_db.append(notification)
+    return notification
+
 def generate_recurring_tasks():
     """Generate new instances of recurring tasks that are due"""
     today = datetime.now().strftime("%Y-%m-%d")
@@ -157,6 +191,25 @@ def generate_recurring_tasks():
                 recurring_task["next_generation_date"], 
                 recurring_task["frequency"]
             )
+        
+        # Check for conflicts in upcoming recurring task instances
+        elif not is_employee_working(recurring_task["empleado_id"], recurring_task["next_generation_date"]):
+            # Create conflict notification for recurring task
+            conflict_data = {
+                "titulo": recurring_task["titulo"],
+                "descripcion": recurring_task["descripcion"],
+                "empleado_id": recurring_task["empleado_id"],
+                "fecha": recurring_task["next_generation_date"],
+                "prioridad": recurring_task["prioridad"],
+                "frequency": recurring_task["frequency"]
+            }
+            create_conflict_notification(conflict_data, "recurring_conflict")
+            
+            # Skip this instance and move to next date
+            recurring_task["next_generation_date"] = calculate_next_date(
+                recurring_task["next_generation_date"], 
+                recurring_task["frequency"]
+            )
 
 @tasks_router.post("")
 async def create_task(task: dict, x_demo_token: str = Header(None)):
@@ -165,6 +218,17 @@ async def create_task(task: dict, x_demo_token: str = Header(None)):
     
     # Get employee name from ID
     empleado_name = empleados_map.get(task["empleado_id"], f"Empleado {task['empleado_id']}")
+    
+    # Check if employee is working on the task date
+    if not is_employee_working(task["empleado_id"], task["fecha"]):
+        # Create conflict notification for managers
+        conflict_notification = create_conflict_notification(task, "assignment_conflict")
+        return {
+            "error": "scheduling_conflict",
+            "message": f"No se puede asignar tarea a {empleado_name} el {task['fecha']} - no está programado para trabajar",
+            "notification_id": conflict_notification["id"],
+            "suggestion": "Puede reasignar la tarea a otro empleado o cambiar la fecha"
+        }
     
     # Check if this is a recurring task
     is_recurring = task.get("is_recurring", False)
@@ -226,6 +290,164 @@ async def update_task_status(task_id: int, update_data: dict, x_demo_token: str 
     
     return {"message": "Task updated", "task": task}
 
+# Manager Inbox Routes
+@inbox_router.get("")
+async def get_inbox_notifications(x_demo_token: str = Header(None)):
+    """Get all pending conflict notifications for managers"""
+    # Sort by creation date, newest first
+    sorted_notifications = sorted(
+        [notif for notif in manager_inbox_db if notif["status"] == "pending"], 
+        key=lambda x: x["created_at"], 
+        reverse=True
+    )
+    return {"notifications": sorted_notifications}
+
+@inbox_router.post("/{notification_id}/reassign")
+async def reassign_task(notification_id: int, reassignment_data: dict, x_demo_token: str = Header(None)):
+    """Reassign a conflicted task to another employee"""
+    # Find the notification
+    notification = None
+    for notif in manager_inbox_db:
+        if notif["id"] == notification_id:
+            notification = notif
+            break
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    new_empleado_id = reassignment_data["new_empleado_id"]
+    new_empleado_name = empleados_map.get(new_empleado_id, f"Empleado {new_empleado_id}")
+    
+    # Check if new employee is working on that date
+    if not is_employee_working(new_empleado_id, notification["fecha"]):
+        return {
+            "error": "reassignment_conflict",
+            "message": f"{new_empleado_name} tampoco está programado para trabajar el {notification['fecha']}"
+        }
+    
+    # Create the task with new assignment
+    task_data = notification["task_data"].copy()
+    task_data["empleado_id"] = new_empleado_id
+    
+    # Generate new task ID
+    new_id = max([t["id"] for t in tasks_db], default=0) + 1
+    
+    # Create reassigned task
+    new_task = {
+        "id": new_id,
+        "titulo": task_data["titulo"],
+        "descripcion": task_data.get("descripcion", ""),
+        "empleado_id": new_empleado_id,
+        "empleado": new_empleado_name,
+        "fecha": task_data["fecha"],
+        "estado": "pendiente",
+        "prioridad": task_data.get("prioridad", "media"),
+        "is_recurring": task_data.get("is_recurring", False),
+        "frequency": task_data.get("frequency", None),
+        "parent_task_id": None
+    }
+    
+    # Add to database
+    tasks_db.append(new_task)
+    
+    # Mark notification as resolved
+    notification["status"] = "resolved"
+    notification["resolved_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    notification["resolution"] = f"Tarea reasignada a {new_empleado_name}"
+    
+    return {
+        "message": f"Tarea reasignada exitosamente a {new_empleado_name}",
+        "task": new_task,
+        "notification": notification
+    }
+
+@inbox_router.post("/{notification_id}/reschedule")
+async def reschedule_task(notification_id: int, reschedule_data: dict, x_demo_token: str = Header(None)):
+    """Reschedule a conflicted task to a different date"""
+    # Find the notification
+    notification = None
+    for notif in manager_inbox_db:
+        if notif["id"] == notification_id:
+            notification = notif
+            break
+    
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    new_fecha = reschedule_data["new_fecha"]
+    empleado_id = notification["empleado_id"]
+    
+    # Check if employee is working on the new date
+    if not is_employee_working(empleado_id, new_fecha):
+        return {
+            "error": "reschedule_conflict",
+            "message": f"{notification['empleado_name']} tampoco está programado para trabajar el {new_fecha}"
+        }
+    
+    # Create the task with new date
+    task_data = notification["task_data"].copy()
+    task_data["fecha"] = new_fecha
+    
+    # Generate new task ID
+    new_id = max([t["id"] for t in tasks_db], default=0) + 1
+    
+    # Create rescheduled task
+    new_task = {
+        "id": new_id,
+        "titulo": task_data["titulo"],
+        "descripcion": task_data.get("descripcion", ""),
+        "empleado_id": empleado_id,
+        "empleado": notification["empleado_name"],
+        "fecha": new_fecha,
+        "estado": "pendiente",
+        "prioridad": task_data.get("prioridad", "media"),
+        "is_recurring": task_data.get("is_recurring", False),
+        "frequency": task_data.get("frequency", None),
+        "parent_task_id": None
+    }
+    
+    # Add to database
+    tasks_db.append(new_task)
+    
+    # Mark notification as resolved
+    notification["status"] = "resolved"
+    notification["resolved_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    notification["resolution"] = f"Tarea reprogramada para {new_fecha}"
+    
+    return {
+        "message": f"Tarea reprogramada exitosamente para {new_fecha}",
+        "task": new_task,
+        "notification": notification
+    }
+
+# Enhanced schedule route to include tasks
+@schedules_router.get("/{schedule_id}/tasks")
+async def get_schedule_tasks(schedule_id: int, x_demo_token: str = Header(None)):
+    """Get all tasks for a specific schedule/date"""
+    # Find the schedule
+    schedule = None
+    for sched in schedules_db:
+        if sched["id"] == schedule_id:
+            schedule = sched
+            break
+    
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    # Generate any pending recurring tasks first
+    generate_recurring_tasks()
+    
+    # Find tasks for this employee on this date
+    schedule_tasks = [
+        task for task in tasks_db 
+        if task["empleado_id"] == schedule["empleado_id"] and task["fecha"] == schedule["fecha"]
+    ]
+    
+    return {
+        "schedule": schedule,
+        "tasks": sorted(schedule_tasks, key=lambda x: x["prioridad"])
+    }
+
 # Create FastAPI app
 app = FastAPI()
 
@@ -243,5 +465,6 @@ app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(schedules_router)
 app.include_router(tasks_router)
+app.include_router(inbox_router)
 
 print("Starting FastAPI backend with CORS configuration")
