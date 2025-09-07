@@ -13,7 +13,9 @@ function TasksScreen() {
     descripcion: '',
     empleado_id: '1',
     fecha: '',
-    prioridad: 'media'
+    prioridad: 'media',
+    is_recurring: false,
+    frequency: 'weekly'
   });
   const { token, user } = useAuth();
 
@@ -27,6 +29,11 @@ function TasksScreen() {
 
   const PRIORIDAD_OPTIONS = ['baja', 'media', 'alta'];
   const ESTADO_OPTIONS = ['pendiente', 'en_progreso', 'completada'];
+  const FREQUENCY_OPTIONS = [
+    { value: 'daily', label: 'Diario' },
+    { value: 'weekly', label: 'Semanal' },
+    { value: 'monthly', label: 'Mensual' }
+  ];
 
   const loadTasks = async () => {
     try {
@@ -62,22 +69,29 @@ function TasksScreen() {
 
     setSubmitting(true);
     try {
-      await createTask(token, {
+      const taskData = {
         titulo: formData.titulo,
         descripcion: formData.descripcion,
         empleado_id: parseInt(formData.empleado_id),
         fecha: formData.fecha,
-        prioridad: formData.prioridad
-      });
+        prioridad: formData.prioridad,
+        is_recurring: formData.is_recurring,
+        frequency: formData.is_recurring ? formData.frequency : null
+      };
       
-      alert('Tarea creada exitosamente');
+      await createTask(token, taskData);
+      
+      const message = formData.is_recurring ? 'Tarea recurrente creada exitosamente' : 'Tarea creada exitosamente';
+      alert(message);
       setShowForm(false);
       setFormData({
         titulo: '',
         descripcion: '',
         empleado_id: '1',
         fecha: '',
-        prioridad: 'media'
+        prioridad: 'media',
+        is_recurring: false,
+        frequency: 'weekly'
       });
       loadTasks(); // Refresh the list
     } catch (error) {
@@ -179,13 +193,24 @@ function TasksScreen() {
               <div key={task.id} className="task-card">
                 <div className="task-header">
                   <div className="task-title-row">
-                    <h3 className="task-title">{task.titulo}</h3>
-                    <span 
-                      className="priority-badge" 
-                      style={{ backgroundColor: getPriorityColor(task.prioridad) }}
-                    >
-                      {task.prioridad}
-                    </span>
+                    <h3 className="task-title">
+                      {task.is_recurring && '🔄 '}{task.titulo}
+                    </h3>
+                    <div className="task-badges">
+                      {task.is_recurring && (
+                        <span className="recurring-badge">
+                          {task.frequency === 'daily' && 'Diario'}
+                          {task.frequency === 'weekly' && 'Semanal'}
+                          {task.frequency === 'monthly' && 'Mensual'}
+                        </span>
+                      )}
+                      <span 
+                        className="priority-badge" 
+                        style={{ backgroundColor: getPriorityColor(task.prioridad) }}
+                      >
+                        {task.prioridad}
+                      </span>
+                    </div>
                   </div>
                   <div className="task-meta">
                     <span className="task-date">{formatDate(task.fecha)}</span>
@@ -299,6 +324,43 @@ function TasksScreen() {
                   ))}
                 </div>
               </div>
+
+              <div className="input-group">
+                <label className="input-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_recurring}
+                    onChange={(e) => setFormData({...formData, is_recurring: e.target.checked})}
+                    style={{ marginRight: '8px' }}
+                  />
+                  🔄 Tarea recurrente
+                </label>
+              </div>
+
+              {formData.is_recurring && (
+                <div className="input-group">
+                  <label className="input-label">Frecuencia</label>
+                  <div className="picker-container">
+                    {FREQUENCY_OPTIONS.map((freq) => (
+                      <button
+                        key={freq.value}
+                        type="button"
+                        className={`picker-option ${
+                          formData.frequency === freq.value ? 'picker-option-selected' : ''
+                        }`}
+                        onClick={() => setFormData({...formData, frequency: freq.value})}
+                      >
+                        🔄 {freq.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="frequency-info">
+                    {formData.frequency === 'daily' && 'Se creará una nueva tarea cada día'}
+                    {formData.frequency === 'weekly' && 'Se creará una nueva tarea cada semana'}
+                    {formData.frequency === 'monthly' && 'Se creará una nueva tarea cada mes'}
+                  </p>
+                </div>
+              )}
 
               <div className="modal-buttons">
                 <button
