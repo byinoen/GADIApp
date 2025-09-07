@@ -79,7 +79,24 @@ function TasksScreen() {
         frequency: formData.is_recurring ? formData.frequency : null
       };
       
-      await createTask(token, taskData);
+      const response = await createTask(token, taskData);
+      
+      // Check if there's a scheduling conflict
+      if (response.error === 'scheduling_conflict') {
+        const conflictMessage = `⚠️ CONFLICTO DE HORARIO\n\n${response.message}\n\n${response.suggestion}\n\nSe ha enviado una notificación a su bandeja de entrada para resolver este conflicto.`;
+        alert(conflictMessage);
+        setShowForm(false);
+        setFormData({
+          titulo: '',
+          descripcion: '',
+          empleado_id: '1',
+          fecha: '',
+          prioridad: 'media',
+          is_recurring: false,
+          frequency: 'weekly'
+        });
+        return; // Don't reload tasks, conflict was created instead
+      }
       
       const message = formData.is_recurring ? 'Tarea recurrente creada exitosamente' : 'Tarea creada exitosamente';
       alert(message);
