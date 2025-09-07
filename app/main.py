@@ -2,6 +2,14 @@ from fastapi import FastAPI, APIRouter, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 import calendar
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from io import BytesIO
+import base64
 
 health_router = APIRouter()
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -650,6 +658,153 @@ async def create_procedure(register_id: int, procedure_data: dict, x_demo_token:
     
     procedures_db.append(new_procedure)
     return {"message": "Procedure created", "procedure": new_procedure}
+
+@registers_router.get("/{register_id}/export/pdf")
+async def export_register_pdf(register_id: int, fecha_inicio: str = None, fecha_fin: str = None, x_demo_token: str = Header(None)):
+    """Generate PDF export of register entries"""
+    # Get register info
+    register = next((reg for reg in registers_db if reg["id"] == register_id), None)
+    if not register:
+        raise HTTPException(status_code=404, detail="Register not found")
+    
+    # Get entries for the register
+    entries = [entry for entry in register_entries_db if entry["register_id"] == register_id]
+    
+    # Filter by date range if provided
+    if fecha_inicio:
+        entries = [entry for entry in entries if entry["fecha_completado"][:10] >= fecha_inicio]
+    if fecha_fin:
+        entries = [entry for entry in entries if entry["fecha_completado"][:10] <= fecha_fin]
+    
+    # Sort by completion date
+    entries = sorted(entries, key=lambda x: x["fecha_completado"])
+    
+    # Create PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch)
+    
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        spaceAfter=30,
+        alignment=TA_CENTER,
+        textColor=colors.darkblue
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        spaceAfter=12,
+        textColor=colors.darkblue
+    )
+    
+    # Build PDF content
+    story = []
+    
+    # Title
+    story.append(Paragraph(f"📋 {register['nombre']}", title_style))
+    story.append(Paragraph(f"Registro Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Register description
+    story.append(Paragraph("Descripción del Registro:", heading_style))
+    story.append(Paragraph(register['descripcion'], styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Date range info
+    if fecha_inicio or fecha_fin:
+        date_range = f"Período: "
+        if fecha_inicio:
+            date_range += f"Desde {fecha_inicio} "
+        if fecha_fin:
+            date_range += f"Hasta {fecha_fin}"
+        story.append(Paragraph(date_range, styles['Normal']))
+        story.append(Spacer(1, 12))
+    
+    # Entries summary
+    story.append(Paragraph("Resumen de Entradas:", heading_style))
+    story.append(Paragraph(f"Total de entradas registradas: {len(entries)}", styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    if entries:
+        # Create entries table
+        table_data = [['Fecha', 'Empleado', 'Procedimiento', 'Resultado', 'Observaciones']]
+        
+        for entry in entries:
+            # Get procedure name
+            procedure_name = "N/A"
+            if entry["procedure_id"]:
+                procedure = next((p for p in procedures_db if p["id"] == entry["procedure_id"]), None)
+                if procedure:
+                    procedure_name = procedure["nombre"]
+            
+            table_data.append([
+                entry["fecha_completado"][:10],  # Date only
+                entry["empleado_name"],
+                procedure_name,
+                entry["resultado"].title(),
+                entry["observaciones"][:50] + "..." if len(entry["observaciones"]) > 50 else entry["observaciones"]
+            ])
+        
+        # Create and style table
+        table = Table(table_data, colWidths=[1.2*inch, 1.5*inch, 2*inch, 1*inch, 2*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        
+        story.append(table)
+        story.append(Spacer(1, 20))
+        
+        # Detailed entries
+        story.append(Paragraph("Detalles de Entradas:", heading_style))
+        
+        for i, entry in enumerate(entries, 1):
+            # Get procedure details
+            procedure = None
+            if entry["procedure_id"]:
+                procedure = next((p for p in procedures_db if p["id"] == entry["procedure_id"]), None)
+            
+            story.append(Paragraph(f"Entrada #{i}", styles['Heading3']))
+            story.append(Paragraph(f"<b>Fecha:</b> {entry['fecha_completado']}", styles['Normal']))
+            story.append(Paragraph(f"<b>Empleado:</b> {entry['empleado_name']}", styles['Normal']))
+            story.append(Paragraph(f"<b>Resultado:</b> {entry['resultado'].title()}", styles['Normal']))
+            
+            if procedure:
+                story.append(Paragraph(f"<b>Procedimiento:</b> {procedure['nombre']}", styles['Normal']))
+                story.append(Paragraph(f"<b>Tiempo Estimado:</b> {procedure['tiempo_estimado']}", styles['Normal']))
+            
+            if entry["observaciones"]:
+                story.append(Paragraph(f"<b>Observaciones:</b> {entry['observaciones']}", styles['Normal']))
+            
+            story.append(Paragraph(f"<b>Firma:</b> {entry['firma_empleado']}", styles['Normal']))
+            story.append(Spacer(1, 12))
+    else:
+        story.append(Paragraph("No se encontraron entradas para el período seleccionado.", styles['Normal']))
+    
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    # Return PDF as base64 encoded string
+    pdf_base64 = base64.b64encode(buffer.getvalue()).decode()
+    
+    return {
+        "pdf_base64": pdf_base64,
+        "filename": f"registro_{register['nombre'].replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
+    }
 
 # Create FastAPI app
 app = FastAPI()

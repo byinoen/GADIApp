@@ -323,3 +323,118 @@ export async function rescheduleTask(token, notificationId, newDate) {
     throw new Error(`Failed to reschedule task: ${error.message}`);
   }
 }
+
+// Register Management API
+export async function getRegisters(token) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get registers: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get registers: ${error.message}`);
+  }
+}
+
+export async function getRegister(token, registerId) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers/${registerId}`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get register: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get register: ${error.message}`);
+  }
+}
+
+export async function getRegisterEntries(token, registerId, fechaInicio = null, fechaFin = null) {
+  try {
+    let url = `${BASE_URL}/registers/${registerId}/entries`;
+    const params = new URLSearchParams();
+    if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+    if (fechaFin) params.append('fecha_fin', fechaFin);
+    if (params.toString()) url += `?${params.toString()}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get register entries: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get register entries: ${error.message}`);
+  }
+}
+
+export async function createRegisterEntry(token, registerId, entryData) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers/${registerId}/entries`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(entryData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to create register entry: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to create register entry: ${error.message}`);
+  }
+}
+
+export async function exportRegisterPDF(token, registerId, fechaInicio = null, fechaFin = null) {
+  try {
+    let url = `${BASE_URL}/registers/${registerId}/export/pdf`;
+    const params = new URLSearchParams();
+    if (fechaInicio) params.append('fecha_inicio', fechaInicio);
+    if (fechaFin) params.append('fecha_fin', fechaFin);
+    if (params.toString()) url += `?${params.toString()}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to export register PDF: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to export register PDF: ${error.message}`);
+  }
+}
