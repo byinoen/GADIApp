@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
+from datetime import datetime, timedelta
+import calendar
 
 health_router = APIRouter()
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -25,10 +26,13 @@ empleados_map = {
 
 # In-memory storage for tasks
 tasks_db = [
-    {"id": 1, "titulo": "Revisar inventario", "descripcion": "Contar y verificar productos en almacén", "empleado_id": 1, "empleado": "Juan Pérez", "fecha": "2025-09-08", "estado": "pendiente", "prioridad": "media"},
-    {"id": 2, "titulo": "Limpiar área de trabajo", "descripcion": "Mantener limpieza en zona de producción", "empleado_id": 2, "empleado": "María García", "fecha": "2025-09-08", "estado": "en_progreso", "prioridad": "baja"},
-    {"id": 3, "titulo": "Preparar reporte diario", "descripcion": "Elaborar resumen de actividades del turno", "empleado_id": 1, "empleado": "Juan Pérez", "fecha": "2025-09-09", "estado": "completada", "prioridad": "alta"}
+    {"id": 1, "titulo": "Revisar inventario", "descripcion": "Contar y verificar productos en almacén", "empleado_id": 1, "empleado": "Juan Pérez", "fecha": "2025-09-08", "estado": "pendiente", "prioridad": "media", "is_recurring": False, "frequency": None, "parent_task_id": None},
+    {"id": 2, "titulo": "Limpiar área de trabajo", "descripcion": "Mantener limpieza en zona de producción", "empleado_id": 2, "empleado": "María García", "fecha": "2025-09-08", "estado": "en_progreso", "prioridad": "baja", "is_recurring": False, "frequency": None, "parent_task_id": None},
+    {"id": 3, "titulo": "Preparar reporte diario", "descripcion": "Elaborar resumen de actividades del turno", "empleado_id": 1, "empleado": "Juan Pérez", "fecha": "2025-09-09", "estado": "completada", "prioridad": "alta", "is_recurring": False, "frequency": None, "parent_task_id": None}
 ]
+
+# In-memory storage for recurring task templates
+recurring_tasks_db = []
 
 @health_router.get("/health")
 async def health_check():
@@ -81,6 +85,9 @@ async def create_schedule(schedule: dict, x_demo_token: str = Header(None)):
 
 @tasks_router.get("")
 async def get_tasks(empleado_id: int = None, x_demo_token: str = Header(None)):
+    # Generate any pending recurring tasks first
+    generate_recurring_tasks()
+    
     # If empleado_id is provided, filter tasks for that employee
     if empleado_id:
         filtered_tasks = [task for task in tasks_db if task["empleado_id"] == empleado_id]
@@ -90,15 +97,102 @@ async def get_tasks(empleado_id: int = None, x_demo_token: str = Header(None)):
     sorted_tasks = sorted(tasks_db, key=lambda x: (x["fecha"], x["prioridad"]))
     return {"tasks": sorted_tasks}
 
+def calculate_next_date(current_date: str, frequency: str) -> str:
+    """Calculate the next occurrence date based on frequency"""
+    current = datetime.strptime(current_date, "%Y-%m-%d")
+    
+    if frequency == "daily":
+        next_date = current + timedelta(days=1)
+    elif frequency == "weekly":
+        next_date = current + timedelta(weeks=1)
+    elif frequency == "monthly":
+        # Handle month-end edge cases
+        if current.month == 12:
+            next_month = current.replace(year=current.year + 1, month=1)
+        else:
+            next_month = current.replace(month=current.month + 1)
+        
+        # Handle case where next month has fewer days (e.g., Jan 31 -> Feb 28)
+        try:
+            next_date = next_month.replace(day=current.day)
+        except ValueError:
+            # If day doesn't exist in next month, use last day of month
+            last_day = calendar.monthrange(next_month.year, next_month.month)[1]
+            next_date = next_month.replace(day=last_day)
+    else:
+        next_date = current
+    
+    return next_date.strftime("%Y-%m-%d")
+
+def generate_recurring_tasks():
+    """Generate new instances of recurring tasks that are due"""
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    for recurring_task in recurring_tasks_db:
+        # Check if it's time to generate next instance
+        if recurring_task["next_generation_date"] <= today:
+            # Generate new task ID
+            new_id = max([t["id"] for t in tasks_db], default=0) + 1
+            
+            # Create new task instance
+            new_task = {
+                "id": new_id,
+                "titulo": recurring_task["titulo"],
+                "descripcion": recurring_task["descripcion"],
+                "empleado_id": recurring_task["empleado_id"],
+                "empleado": recurring_task["empleado"],
+                "fecha": recurring_task["next_generation_date"],
+                "estado": "pendiente",
+                "prioridad": recurring_task["prioridad"],
+                "is_recurring": False,  # This is an instance, not the template
+                "frequency": None,
+                "parent_task_id": recurring_task["id"]
+            }
+            
+            # Add to tasks database
+            tasks_db.append(new_task)
+            
+            # Update next generation date for recurring task
+            recurring_task["next_generation_date"] = calculate_next_date(
+                recurring_task["next_generation_date"], 
+                recurring_task["frequency"]
+            )
+
 @tasks_router.post("")
 async def create_task(task: dict, x_demo_token: str = Header(None)):
-    # Generate new ID
-    new_id = max([t["id"] for t in tasks_db], default=0) + 1
+    # Generate recurring tasks first
+    generate_recurring_tasks()
     
     # Get employee name from ID
     empleado_name = empleados_map.get(task["empleado_id"], f"Empleado {task['empleado_id']}")
     
-    # Create new task
+    # Check if this is a recurring task
+    is_recurring = task.get("is_recurring", False)
+    frequency = task.get("frequency", None)
+    
+    if is_recurring and frequency:
+        # Generate recurring task template ID
+        recurring_id = max([rt["id"] for rt in recurring_tasks_db], default=0) + 1
+        
+        # Create recurring task template
+        recurring_template = {
+            "id": recurring_id,
+            "titulo": task["titulo"],
+            "descripcion": task.get("descripcion", ""),
+            "empleado_id": task["empleado_id"],
+            "empleado": empleado_name,
+            "prioridad": task.get("prioridad", "media"),
+            "frequency": frequency,
+            "next_generation_date": task["fecha"]
+        }
+        
+        # Add to recurring tasks database
+        recurring_tasks_db.append(recurring_template)
+    
+    # Generate regular task ID
+    new_id = max([t["id"] for t in tasks_db], default=0) + 1
+    
+    # Create new task (first instance for recurring, or one-time task)
     new_task = {
         "id": new_id,
         "titulo": task["titulo"],
@@ -107,13 +201,17 @@ async def create_task(task: dict, x_demo_token: str = Header(None)):
         "empleado": empleado_name,
         "fecha": task["fecha"],
         "estado": "pendiente",
-        "prioridad": task.get("prioridad", "media")
+        "prioridad": task.get("prioridad", "media"),
+        "is_recurring": is_recurring,
+        "frequency": frequency,
+        "parent_task_id": None
     }
     
     # Add to database
     tasks_db.append(new_task)
     
-    return {"message": "Task created", "task": new_task}
+    message = "Recurring task created" if is_recurring else "Task created"
+    return {"message": message, "task": new_task}
 
 @tasks_router.put("/{task_id}")
 async def update_task_status(task_id: int, update_data: dict, x_demo_token: str = Header(None)):
