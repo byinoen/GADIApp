@@ -22,7 +22,7 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 - **Backend Server**: FastAPI/uvicorn server on port 8000
 - **Host Configuration**: Both servers bound to 0.0.0.0 for Replit compatibility
 
-## Recent Changes (September 6, 2025)
+## Recent Changes (September 7, 2025)
 - **MAJOR**: Converted from React Native/Expo to pure React web application
 - Restructured codebase to /src with components, services, contexts folders
 - Created App.js entry point with authentication flow
@@ -31,6 +31,11 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 - Configured npm start workflow for Replit webview compatibility
 - Maintained Spanish UI and role-based authentication system
 - Kept FastAPI backend integration and schedule management features
+- **NEW**: Added comprehensive task management system with role-based access
+- Added TasksScreen component with task creation, viewing, and status updates
+- Enhanced navigation with tabs for switching between schedules and tasks
+- Implemented task priority system (baja, media, alta) with visual indicators
+- Added task status management (pendiente, en_progreso, completada)
 
 ## User Preferences
 - Spanish language interface throughout
@@ -57,6 +62,9 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 - `POST /auth/login` - User authentication with role-based response
 - `GET /schedules` - Get schedules (filtered by user role)
 - `POST /schedules` - Create new schedule (admin/encargado only)
+- `GET /tasks` - Get tasks (filtered by employee ID for workers)
+- `POST /tasks` - Create new task (admin/encargado only)
+- `PUT /tasks/{task_id}` - Update task status (assignee or management)
 
 ## Authentication Roles
 - **admin@example.com** (1234) - Full access to all features
