@@ -22,7 +22,8 @@ function ManagementScreen() {
   const [registerForm, setRegisterForm] = useState({
     nombre: '',
     tipo: 'general',
-    descripcion: ''
+    descripcion: '',
+    campos_personalizados: []
   });
   
   // Procedure form state
@@ -85,7 +86,7 @@ function ManagementScreen() {
       await createRegister(token, registerForm);
       alert('Registro creado exitosamente');
       setShowRegisterForm(false);
-      setRegisterForm({ nombre: '', tipo: 'general', descripcion: '' });
+      setRegisterForm({ nombre: '', tipo: 'general', descripcion: '', campos_personalizados: [] });
       await loadRegisters();
     } catch (error) {
       console.error('Error creating register:', error);
@@ -237,6 +238,72 @@ function ManagementScreen() {
     });
   };
 
+  // Custom field management functions
+  const addCustomField = () => {
+    setRegisterForm({
+      ...registerForm,
+      campos_personalizados: [
+        ...registerForm.campos_personalizados,
+        { nombre: '', tipo: 'text', etiqueta: '', requerido: false, opciones: [] }
+      ]
+    });
+  };
+
+  const updateCustomField = (index, field, value) => {
+    const newFields = [...registerForm.campos_personalizados];
+    newFields[index][field] = value;
+    
+    // Clear options if type is not select
+    if (field === 'tipo' && value !== 'select') {
+      newFields[index].opciones = [];
+    }
+    
+    setRegisterForm({
+      ...registerForm,
+      campos_personalizados: newFields
+    });
+  };
+
+  const removeCustomField = (index) => {
+    setRegisterForm({
+      ...registerForm,
+      campos_personalizados: registerForm.campos_personalizados.filter((_, i) => i !== index)
+    });
+  };
+
+  const addSelectOption = (fieldIndex) => {
+    const newFields = [...registerForm.campos_personalizados];
+    if (!newFields[fieldIndex].opciones) {
+      newFields[fieldIndex].opciones = [];
+    }
+    newFields[fieldIndex].opciones.push('');
+    
+    setRegisterForm({
+      ...registerForm,
+      campos_personalizados: newFields
+    });
+  };
+
+  const updateSelectOption = (fieldIndex, optionIndex, value) => {
+    const newFields = [...registerForm.campos_personalizados];
+    newFields[fieldIndex].opciones[optionIndex] = value;
+    
+    setRegisterForm({
+      ...registerForm,
+      campos_personalizados: newFields
+    });
+  };
+
+  const removeSelectOption = (fieldIndex, optionIndex) => {
+    const newFields = [...registerForm.campos_personalizados];
+    newFields[fieldIndex].opciones = newFields[fieldIndex].opciones.filter((_, i) => i !== optionIndex);
+    
+    setRegisterForm({
+      ...registerForm,
+      campos_personalizados: newFields
+    });
+  };
+
   if (!isAdmin) {
     return (
       <div className="management-screen">
@@ -304,6 +371,11 @@ function ManagementScreen() {
                     Creado: {new Date(register.created_at).toLocaleDateString('es-ES')}
                   </span>
                 </div>
+                {register.campos_personalizados && register.campos_personalizados.length > 0 && (
+                  <div className="custom-fields-info">
+                    <small>📝 {register.campos_personalizados.length} campos personalizados definidos</small>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -442,6 +514,100 @@ function ManagementScreen() {
                   onChange={(e) => setRegisterForm({...registerForm, descripcion: e.target.value})}
                   rows="3"
                 />
+              </div>
+
+              {/* Custom Fields Section */}
+              <div className="custom-fields-section">
+                <div className="section-header">
+                  <label className="input-label">📝 Campos Personalizados del Registro</label>
+                  <button type="button" className="add-item-btn" onClick={addCustomField}>
+                    ➕ Agregar Campo
+                  </button>
+                </div>
+                <p className="field-description">
+                  Define qué información debe registrarse cuando se complete este tipo de registro.
+                </p>
+                
+                {registerForm.campos_personalizados.map((field, index) => (
+                  <div key={index} className="custom-field-row">
+                    <div className="field-inputs">
+                      <input
+                        type="text"
+                        placeholder="Nombre del campo (ej: fecha_aplicacion)"
+                        className="field-input"
+                        value={field.nombre}
+                        onChange={(e) => updateCustomField(index, 'nombre', e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Etiqueta visible (ej: Fecha de Aplicación)"
+                        className="field-input"
+                        value={field.etiqueta}
+                        onChange={(e) => updateCustomField(index, 'etiqueta', e.target.value)}
+                      />
+                      <select
+                        className="field-input"
+                        value={field.tipo}
+                        onChange={(e) => updateCustomField(index, 'tipo', e.target.value)}
+                      >
+                        <option value="text">Texto</option>
+                        <option value="textarea">Texto largo</option>
+                        <option value="number">Número</option>
+                        <option value="date">Fecha</option>
+                        <option value="select">Lista de opciones</option>
+                      </select>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={field.requerido}
+                          onChange={(e) => updateCustomField(index, 'requerido', e.target.checked)}
+                        />
+                        Requerido
+                      </label>
+                      <button 
+                        type="button" 
+                        className="remove-btn"
+                        onClick={() => removeCustomField(index)}
+                      >
+                        ❌
+                      </button>
+                    </div>
+                    
+                    {/* Select options */}
+                    {field.tipo === 'select' && (
+                      <div className="select-options">
+                        <div className="options-header">
+                          <span>Opciones disponibles:</span>
+                          <button 
+                            type="button" 
+                            className="add-option-btn"
+                            onClick={() => addSelectOption(index)}
+                          >
+                            ➕ Opción
+                          </button>
+                        </div>
+                        {(field.opciones || []).map((option, optionIndex) => (
+                          <div key={optionIndex} className="option-row">
+                            <input
+                              type="text"
+                              placeholder="Valor de la opción"
+                              className="option-input"
+                              value={option}
+                              onChange={(e) => updateSelectOption(index, optionIndex, e.target.value)}
+                            />
+                            <button 
+                              type="button" 
+                              className="remove-option-btn"
+                              onClick={() => removeSelectOption(index, optionIndex)}
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
 
               <div className="modal-buttons">

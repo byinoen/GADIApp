@@ -706,21 +706,61 @@ async def get_register_entries(register_id: int, fecha_inicio: str = None, fecha
     
     return {"entries": entries}
 
+def validate_custom_fields(register_id: int, custom_field_data: dict):
+    """Validate custom field data against register field definitions"""
+    # Get register
+    register = next((reg for reg in registers_db if reg["id"] == register_id), None)
+    if not register:
+        return False, "Register not found"
+    
+    campos_personalizados = register.get("campos_personalizados", [])
+    errors = []
+    
+    # Check required fields
+    for campo in campos_personalizados:
+        if campo["requerido"] and campo["nombre"] not in custom_field_data:
+            errors.append(f"Campo requerido faltante: {campo['etiqueta']}")
+        
+        # Validate field values if present
+        if campo["nombre"] in custom_field_data:
+            value = custom_field_data[campo["nombre"]]
+            
+            # Check select field options
+            if campo["tipo"] == "select" and "opciones" in campo:
+                if value not in campo["opciones"]:
+                    errors.append(f"Valor inválido para {campo['etiqueta']}: {value}")
+            
+            # Basic type validation
+            if campo["tipo"] == "number":
+                try:
+                    float(value)
+                except (ValueError, TypeError):
+                    errors.append(f"Valor numérico inválido para {campo['etiqueta']}: {value}")
+    
+    return len(errors) == 0, errors
+
 @registers_router.post("/{register_id}/entries")
 async def create_register_entry(register_id: int, entry_data: dict, x_demo_token: str = Header(None)):
-    """Create a new register entry (employee signature)"""
+    """Create a new register entry (employee signature) with custom fields"""
     # Generate new entry ID
     new_id = max([entry["id"] for entry in register_entries_db], default=0) + 1
     
     # Get employee name
     empleado_name = empleados_map.get(entry_data["empleado_id"], f"Empleado {entry_data['empleado_id']}")
     
+    # Validate custom fields if provided
+    custom_field_data = entry_data.get("campos_personalizados", {})
+    if custom_field_data:
+        is_valid, validation_errors = validate_custom_fields(register_id, custom_field_data)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=f"Errores de validación: {'; '.join(validation_errors)}")
+    
     # Create new register entry
     new_entry = {
         "id": new_id,
         "register_id": register_id,
-        "task_id": entry_data["task_id"],
-        "procedure_id": entry_data["procedure_id"],
+        "task_id": entry_data.get("task_id"),
+        "procedure_id": entry_data.get("procedure_id"),
         "empleado_id": entry_data["empleado_id"],
         "empleado_name": empleado_name,
         "fecha_completado": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -728,6 +768,7 @@ async def create_register_entry(register_id: int, entry_data: dict, x_demo_token
         "observaciones": entry_data.get("observaciones", ""),
         "resultado": entry_data.get("resultado", "completado"),  # completado, incompleto, con_observaciones
         "tiempo_real": entry_data.get("tiempo_real", None),
+        "campos_personalizados": custom_field_data,
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     
@@ -835,10 +876,19 @@ async def update_register_entry(entry_id: int, entry_data: dict, x_demo_token: s
     if not entry:
         raise HTTPException(status_code=404, detail="Register entry not found")
     
+    # Validate custom fields if provided
+    if "campos_personalizados" in entry_data:
+        custom_field_data = entry_data["campos_personalizados"]
+        is_valid, validation_errors = validate_custom_fields(entry["register_id"], custom_field_data)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=f"Errores de validación: {'; '.join(validation_errors)}")
+    
     # Update fields
     entry["observaciones"] = entry_data.get("observaciones", entry["observaciones"])
     entry["resultado"] = entry_data.get("resultado", entry["resultado"])
     entry["tiempo_real"] = entry_data.get("tiempo_real", entry["tiempo_real"])
+    if "campos_personalizados" in entry_data:
+        entry["campos_personalizados"] = entry_data["campos_personalizados"]
     
     return {"message": "Register entry updated", "entry": entry}
 

@@ -531,3 +531,152 @@
     flex-direction: column;
   }
 }
+
+/* Custom Fields Management Styles */
+.custom-fields-info {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #e8f4f8;
+  border-radius: 6px;
+}
+
+.custom-fields-info small {
+  color: #0066cc;
+  font-weight: 500;
+}
+
+.custom-fields-section {
+  margin: 20px 0;
+  padding: 16px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.field-description {
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+.custom-field-row {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.field-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 120px auto auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.field-input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #495057;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+}
+
+.select-options {
+  border-top: 1px solid #e9ecef;
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.options-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.add-option-btn {
+  background: #ffc107;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-option-btn:hover {
+  background: #e0a800;
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.option-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.remove-option-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  min-width: 24px;
+}
+
+.remove-option-btn:hover {
+  background: #c82333;
+}
+
+/* Mobile responsive for custom fields */
+@media (max-width: 768px) {
+  .field-inputs {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .checkbox-label {
+    justify-content: center;
+  }
+  
+  .option-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .remove-option-btn {
+    align-self: center;
+    width: 60px;
+  }
+}
