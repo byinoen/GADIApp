@@ -4,6 +4,7 @@ import LoginScreen from './components/LoginScreen';
 import WorkSchedulesScreen from './components/WorkSchedulesScreen';
 import TasksScreen from './components/TasksScreen';
 import RegisterScreen from './components/RegisterScreen';
+import ManagementScreen from './components/ManagementScreen';
 import './App.css';
 
 // Main app component that handles navigation
@@ -40,6 +41,14 @@ function AppContent() {
             >
               📋 Registros
             </button>
+            {isManager && (
+              <button 
+                className={`nav-tab ${currentView === 'management' ? 'active' : ''}`}
+                onClick={() => setCurrentView('management')}
+              >
+                🔧 Gestión
+              </button>
+            )}
           </div>
           <div className="nav-user">
             <span className="user-info">
@@ -56,6 +65,7 @@ function AppContent() {
         {currentView === 'schedules' && <WorkSchedulesScreen />}
         {currentView === 'tasks' && <TasksScreen />}
         {currentView === 'registers' && <RegisterScreen />}
+        {currentView === 'management' && <ManagementScreen />}
       </main>
     </div>
   );
