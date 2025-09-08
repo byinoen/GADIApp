@@ -755,6 +755,72 @@ async def create_procedure(register_id: int, procedure_data: dict, x_demo_token:
     procedures_db.append(new_procedure)
     return {"message": "Procedure created", "procedure": new_procedure}
 
+@registers_router.put("/{register_id}")
+async def update_register(register_id: int, register_data: dict, x_demo_token: str = Header(None)):
+    """Update an existing register"""
+    register = next((reg for reg in registers_db if reg["id"] == register_id), None)
+    if not register:
+        raise HTTPException(status_code=404, detail="Register not found")
+    
+    # Update fields
+    register["nombre"] = register_data.get("nombre", register["nombre"])
+    register["tipo"] = register_data.get("tipo", register["tipo"])
+    register["descripcion"] = register_data.get("descripcion", register["descripcion"])
+    register["activo"] = register_data.get("activo", register["activo"])
+    
+    return {"message": "Register updated", "register": register}
+
+@registers_router.put("/{register_id}/procedures/{procedure_id}")
+async def update_procedure(register_id: int, procedure_id: int, procedure_data: dict, x_demo_token: str = Header(None)):
+    """Update an existing procedure"""
+    procedure = next((proc for proc in procedures_db if proc["id"] == procedure_id and proc["register_id"] == register_id), None)
+    if not procedure:
+        raise HTTPException(status_code=404, detail="Procedure not found")
+    
+    # Update fields
+    procedure["nombre"] = procedure_data.get("nombre", procedure["nombre"])
+    procedure["receta"] = procedure_data.get("receta", procedure["receta"])
+    procedure["procedimiento"] = procedure_data.get("procedimiento", procedure["procedimiento"])
+    procedure["precauciones"] = procedure_data.get("precauciones", procedure["precauciones"])
+    procedure["tiempo_estimado"] = procedure_data.get("tiempo_estimado", procedure["tiempo_estimado"])
+    
+    return {"message": "Procedure updated", "procedure": procedure}
+
+@registers_router.delete("/{register_id}")
+async def delete_register(register_id: int, x_demo_token: str = Header(None)):
+    """Deactivate a register"""
+    register = next((reg for reg in registers_db if reg["id"] == register_id), None)
+    if not register:
+        raise HTTPException(status_code=404, detail="Register not found")
+    
+    register["activo"] = False
+    return {"message": "Register deactivated", "register": register}
+
+@registers_router.delete("/{register_id}/procedures/{procedure_id}")
+async def delete_procedure(register_id: int, procedure_id: int, x_demo_token: str = Header(None)):
+    """Delete a procedure"""
+    global procedures_db
+    procedure = next((proc for proc in procedures_db if proc["id"] == procedure_id and proc["register_id"] == register_id), None)
+    if not procedure:
+        raise HTTPException(status_code=404, detail="Procedure not found")
+    
+    procedures_db = [proc for proc in procedures_db if not (proc["id"] == procedure_id and proc["register_id"] == register_id)]
+    return {"message": "Procedure deleted"}
+
+@registers_router.put("/entries/{entry_id}")
+async def update_register_entry(entry_id: int, entry_data: dict, x_demo_token: str = Header(None)):
+    """Update an existing register entry"""
+    entry = next((ent for ent in register_entries_db if ent["id"] == entry_id), None)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Register entry not found")
+    
+    # Update fields
+    entry["observaciones"] = entry_data.get("observaciones", entry["observaciones"])
+    entry["resultado"] = entry_data.get("resultado", entry["resultado"])
+    entry["tiempo_real"] = entry_data.get("tiempo_real", entry["tiempo_real"])
+    
+    return {"message": "Register entry updated", "entry": entry}
+
 @registers_router.get("/{register_id}/export/pdf")
 async def export_register_pdf(register_id: int, fecha_inicio: str = None, fecha_fin: str = None, x_demo_token: str = Header(None)):
     """Generate PDF export of register entries"""
