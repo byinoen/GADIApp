@@ -55,7 +55,16 @@ registers_db = [
         "tipo": "treatment",
         "descripcion": "Registro para documentar todos los tratamientos aplicados a los cultivos",
         "activo": True,
-        "created_at": "2025-09-07 12:00:00"
+        "created_at": "2025-09-07 12:00:00",
+        "campos_personalizados": [
+            {"nombre": "fecha_aplicacion", "tipo": "date", "etiqueta": "Fecha de Aplicación", "requerido": True},
+            {"nombre": "tipo_producto", "tipo": "select", "etiqueta": "Tipo de Producto", "requerido": True, "opciones": ["Fungicida", "Insecticida", "Herbicida", "Fertilizante"]},
+            {"nombre": "ubicacion_finca", "tipo": "text", "etiqueta": "Ubicación en la Finca", "requerido": True},
+            {"nombre": "tipo_cultivo", "tipo": "select", "etiqueta": "Tipo de Cultivo", "requerido": True, "opciones": ["Maíz", "Frijol", "Café", "Tomate", "Lechuga"]},
+            {"nombre": "maquina_utilizada", "tipo": "text", "etiqueta": "Máquina/Equipo Utilizado", "requerido": False},
+            {"nombre": "dosis_aplicada", "tipo": "text", "etiqueta": "Dosis Aplicada", "requerido": True},
+            {"nombre": "condiciones_clima", "tipo": "select", "etiqueta": "Condiciones Climáticas", "requerido": False, "opciones": ["Soleado", "Nublado", "Lluvia ligera", "Viento", "Ideal"]}
+        ]
     },
     {
         "id": 2,
@@ -63,7 +72,17 @@ registers_db = [
         "tipo": "maintenance", 
         "descripcion": "Registro para documentar el mantenimiento y revisión de equipos",
         "activo": True,
-        "created_at": "2025-09-07 12:00:00"
+        "created_at": "2025-09-07 12:00:00",
+        "campos_personalizados": [
+            {"nombre": "fecha_mantenimiento", "tipo": "date", "etiqueta": "Fecha de Mantenimiento", "requerido": True},
+            {"nombre": "equipo", "tipo": "select", "etiqueta": "Equipo/Máquina", "requerido": True, "opciones": ["Tractor", "Pulverizador", "Cosechadora", "Arado", "Cultivadora"]},
+            {"nombre": "tipo_mantenimiento", "tipo": "select", "etiqueta": "Tipo de Mantenimiento", "requerido": True, "opciones": ["Preventivo", "Correctivo", "Emergencia"]},
+            {"nombre": "tecnico_responsable", "tipo": "text", "etiqueta": "Técnico Responsable", "requerido": True},
+            {"nombre": "partes_cambiadas", "tipo": "textarea", "etiqueta": "Partes Cambiadas/Reparadas", "requerido": False},
+            {"nombre": "horas_trabajo", "tipo": "number", "etiqueta": "Horas de Trabajo", "requerido": False},
+            {"nombre": "costo_total", "tipo": "number", "etiqueta": "Costo Total (€)", "requerido": False},
+            {"nombre": "proxima_revision", "tipo": "date", "etiqueta": "Próxima Revisión", "requerido": False}
+        ]
     }
 ]
 
@@ -729,7 +748,8 @@ async def create_register(register_data: dict, x_demo_token: str = Header(None))
         "tipo": register_data.get("tipo", "general"),
         "descripcion": register_data.get("descripcion", ""),
         "activo": True,
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "campos_personalizados": register_data.get("campos_personalizados", [])
     }
     
     registers_db.append(new_register)
@@ -767,6 +787,7 @@ async def update_register(register_id: int, register_data: dict, x_demo_token: s
     register["tipo"] = register_data.get("tipo", register["tipo"])
     register["descripcion"] = register_data.get("descripcion", register["descripcion"])
     register["activo"] = register_data.get("activo", register["activo"])
+    register["campos_personalizados"] = register_data.get("campos_personalizados", register.get("campos_personalizados", []))
     
     return {"message": "Register updated", "register": register}
 
