@@ -439,6 +439,157 @@ export async function exportRegisterPDF(token, registerId, fechaInicio = null, f
   }
 }
 
+// Management API functions
+export async function createRegister(token, registerData) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(registerData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to create register: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to create register: ${error.message}`);
+  }
+}
+
+export async function updateRegister(token, registerId, registerData) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers/${registerId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(registerData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to update register: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to update register: ${error.message}`);
+  }
+}
+
+export async function deleteRegister(token, registerId) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers/${registerId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to delete register: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to delete register: ${error.message}`);
+  }
+}
+
+export async function createProcedure(token, registerId, procedureData) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers/${registerId}/procedures`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(procedureData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to create procedure: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to create procedure: ${error.message}`);
+  }
+}
+
+export async function updateProcedure(token, registerId, procedureId, procedureData) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers/${registerId}/procedures/${procedureId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(procedureData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to update procedure: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to update procedure: ${error.message}`);
+  }
+}
+
+export async function deleteProcedure(token, registerId, procedureId) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers/${registerId}/procedures/${procedureId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to delete procedure: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to delete procedure: ${error.message}`);
+  }
+}
+
+export async function updateRegisterEntry(token, entryId, entryData) {
+  try {
+    const response = await fetch(`${BASE_URL}/registers/entries/${entryId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(entryData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to update register entry: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to update register entry: ${error.message}`);
+  }
+}
+
 // Task Timer API
 export async function getTaskDetails(token, taskId) {
   try {
