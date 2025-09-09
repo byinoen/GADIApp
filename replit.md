@@ -36,7 +36,13 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 - Enhanced navigation with tabs for switching between schedules and tasks
 - Implemented task priority system (baja, media, alta) with visual indicators
 - Added task status management (pendiente, en_progreso, completada)
-- **LATEST**: Added flexible custom field management system for registers
+- **LATEST**: Added comprehensive employee management system in Gestión tab
+- Implemented complete CRUD operations for employee data (create, read, update, delete/deactivate)
+- Added employee database with full contact information (name, email, phone, role, active status)
+- Enhanced management interface with employee grid, forms, and role-based editing
+- Integrated employee management with existing task and schedule assignment systems
+- Maintained backward compatibility with existing empleados_map for legacy code
+- Added flexible custom field management system for registers
 - Implemented custom field types: text, textarea, number, date, select (dropdown)
 - Added field validation with required/optional settings and dropdown options
 - Enhanced management interface with dynamic field creation and editing
@@ -81,6 +87,10 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 - `PUT /registers/{id}` - Update register and custom fields (admin/encargado only)
 - `GET /registers/{id}/entries` - Get register entries with custom field data
 - `POST /registers/{id}/entries` - Create register entry with custom field validation
+- `GET /employees` - Get all employees with full information and status
+- `POST /employees` - Create new employee with role and contact information
+- `PUT /employees/{id}` - Update employee data and role assignments
+- `DELETE /employees/{id}` - Deactivate employee (maintains data integrity)
 
 ## Authentication Roles
 - **admin@example.com** (1234) - Full access to all features
