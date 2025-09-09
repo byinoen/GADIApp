@@ -6,7 +6,11 @@ import {
   createRegister,
   updateRegister,
   createProcedure,
-  getRegisterEntries 
+  getRegisterEntries,
+  getEmployees,
+  createEmployee,
+  updateEmployee,
+  deleteEmployee
 } from '../services/api';
 import './ManagementScreen.css';
 
@@ -17,6 +21,18 @@ function ManagementScreen() {
   const [selectedRegister, setSelectedRegister] = useState(null);
   const [registerDetails, setRegisterDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Employee management state
+  const [employees, setEmployees] = useState([]);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [employeeForm, setEmployeeForm] = useState({
+    nombre: '',
+    email: '',
+    role: 'trabajador',
+    telefono: '',
+    activo: true
+  });
   
   // Register form state
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -49,6 +65,7 @@ function ManagementScreen() {
   useEffect(() => {
     if (isAdmin) {
       loadRegisters();
+      loadEmployees();
     }
   }, [token, isAdmin]);
 
@@ -331,6 +348,79 @@ function ManagementScreen() {
     });
   };
 
+  // Employee management functions
+  const loadEmployees = async () => {
+    setLoading(true);
+    try {
+      const response = await getEmployees(token);
+      setEmployees(response.employees || []);
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      alert('Error cargando empleados: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateEmployee = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      if (editingEmployee) {
+        await updateEmployee(token, editingEmployee.id, employeeForm);
+        alert('Empleado actualizado exitosamente');
+      } else {
+        await createEmployee(token, employeeForm);
+        alert('Empleado creado exitosamente');
+      }
+      
+      setShowEmployeeForm(false);
+      setEditingEmployee(null);
+      setEmployeeForm({ nombre: '', email: '', role: 'trabajador', telefono: '', activo: true });
+      await loadEmployees();
+    } catch (error) {
+      console.error('Error saving employee:', error);
+      alert('Error al guardar empleado: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditEmployee = (employee) => {
+    setEditingEmployee(employee);
+    setEmployeeForm({
+      nombre: employee.nombre,
+      email: employee.email,
+      role: employee.role,
+      telefono: employee.telefono,
+      activo: employee.activo
+    });
+    setShowEmployeeForm(true);
+  };
+
+  const handleCancelEmployeeForm = () => {
+    setShowEmployeeForm(false);
+    setEditingEmployee(null);
+    setEmployeeForm({ nombre: '', email: '', role: 'trabajador', telefono: '', activo: true });
+  };
+
+  const handleDeactivateEmployee = async (employee) => {
+    if (window.confirm(`¿Está seguro que desea desactivar al empleado ${employee.nombre}?`)) {
+      setLoading(true);
+      try {
+        await deleteEmployee(token, employee.id);
+        alert('Empleado desactivado exitosamente');
+        await loadEmployees();
+      } catch (error) {
+        console.error('Error deactivating employee:', error);
+        alert('Error al desactivar empleado: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   if (!isAdmin) {
     return (
       <div className="management-screen">
@@ -361,6 +451,12 @@ function ManagementScreen() {
           onClick={() => setActiveTab('procedures')}
         >
           📝 Procedimientos
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
+          onClick={() => setActiveTab('employees')}
+        >
+          👥 Empleados
         </button>
       </div>
 
@@ -509,6 +605,149 @@ function ManagementScreen() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'employees' && (
+        <div className="employees-management">
+          <div className="section-header">
+            <h2>Gestión de Empleados</h2>
+            <button 
+              className="add-button"
+              onClick={() => setShowEmployeeForm(true)}
+            >
+              ➕ Nuevo Empleado
+            </button>
+          </div>
+
+          <div className="employees-grid">
+            {employees.map((employee) => (
+              <div key={employee.id} className="employee-card-container">
+                <div className={`employee-card ${!employee.activo ? 'inactive' : ''}`}>
+                  <div className="employee-header">
+                    <h3>{employee.nombre}</h3>
+                    <span className={`role-badge ${employee.role}`}>
+                      {employee.role === 'admin' ? 'Administrador' :
+                       employee.role === 'encargado' ? 'Encargado' : 'Trabajador'}
+                    </span>
+                  </div>
+                  <div className="employee-info">
+                    <p><strong>📧 Email:</strong> {employee.email}</p>
+                    <p><strong>📞 Teléfono:</strong> {employee.telefono || 'No especificado'}</p>
+                    <p><strong>📅 Registrado:</strong> {new Date(employee.created_at).toLocaleDateString('es-ES')}</p>
+                  </div>
+                  <div className="employee-status">
+                    <span className={`status-badge ${employee.activo ? 'active' : 'inactive'}`}>
+                      {employee.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                </div>
+                <div className="employee-actions">
+                  <button 
+                    className="edit-employee-btn"
+                    onClick={() => handleEditEmployee(employee)}
+                    title="Editar empleado"
+                  >
+                    ✏️ Editar
+                  </button>
+                  {employee.activo && (
+                    <button 
+                      className="deactivate-employee-btn"
+                      onClick={() => handleDeactivateEmployee(employee)}
+                      title="Desactivar empleado"
+                    >
+                      ❌ Desactivar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Employee Form Modal */}
+      {showEmployeeForm && (
+        <div className="modal-overlay" onClick={handleCancelEmployeeForm}>
+          <div className="modal-content employee-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{editingEmployee ? 'Editar Empleado' : 'Nuevo Empleado'}</h2>
+            
+            <form onSubmit={handleCreateEmployee}>
+              <div className="input-group">
+                <label className="input-label">Nombre Completo *</label>
+                <input
+                  type="text"
+                  className="text-input"
+                  value={employeeForm.nombre}
+                  onChange={(e) => setEmployeeForm({...employeeForm, nombre: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Email *</label>
+                <input
+                  type="email"
+                  className="text-input"
+                  value={employeeForm.email}
+                  onChange={(e) => setEmployeeForm({...employeeForm, email: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Rol</label>
+                <select
+                  className="text-input"
+                  value={employeeForm.role}
+                  onChange={(e) => setEmployeeForm({...employeeForm, role: e.target.value})}
+                >
+                  <option value="trabajador">Trabajador</option>
+                  <option value="encargado">Encargado</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Teléfono</label>
+                <input
+                  type="tel"
+                  className="text-input"
+                  value={employeeForm.telefono}
+                  onChange={(e) => setEmployeeForm({...employeeForm, telefono: e.target.value})}
+                  placeholder="+34 123 456 789"
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={employeeForm.activo}
+                    onChange={(e) => setEmployeeForm({...employeeForm, activo: e.target.checked})}
+                  />
+                  Empleado activo
+                </label>
+              </div>
+
+              <div className="modal-buttons">
+                <button
+                  type="button"
+                  className="cancel-button"
+                  onClick={handleCancelEmployeeForm}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="save-button"
+                  disabled={loading}
+                >
+                  {loading ? 'Guardando...' : (editingEmployee ? 'Actualizar Empleado' : 'Crear Empleado')}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

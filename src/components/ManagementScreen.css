@@ -717,3 +717,152 @@
     width: 100%;
   }
 }
+
+/* Employee management styles */
+.employees-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.employee-card-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.employee-card-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.employee-card {
+  padding: 20px;
+}
+
+.employee-card.inactive {
+  background: #f8f9fa;
+  opacity: 0.8;
+}
+
+.employee-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.employee-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.role-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.role-badge.admin {
+  background: #e74c3c;
+  color: white;
+}
+
+.role-badge.encargado {
+  background: #f39c12;
+  color: white;
+}
+
+.role-badge.trabajador {
+  background: #27ae60;
+  color: white;
+}
+
+.employee-info {
+  margin-bottom: 16px;
+}
+
+.employee-info p {
+  margin: 8px 0;
+  color: #5a6c7d;
+  font-size: 14px;
+}
+
+.employee-status {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.employee-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.edit-employee-btn {
+  flex: 1;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.edit-employee-btn:hover {
+  background: #0056b3;
+}
+
+.deactivate-employee-btn {
+  flex: 1;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.deactivate-employee-btn:hover {
+  background: #c82333;
+}
+
+.employee-modal {
+  max-width: 500px;
+}
+
+/* Mobile responsive for employees */
+@media (max-width: 768px) {
+  .employees-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .employee-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .employee-actions {
+    flex-direction: column;
+  }
+  
+  .edit-employee-btn,
+  .deactivate-employee-btn {
+    width: 100%;
+  }
+}
