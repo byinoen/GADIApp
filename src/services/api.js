@@ -526,6 +526,111 @@ export async function createProcedure(token, registerId, procedureData) {
   }
 }
 
+// Employee management API functions
+export async function getEmployees(token) {
+  try {
+    const response = await fetch(`${BASE_URL}/employees`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get employees: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get employees: ${error.message}`);
+  }
+}
+
+export async function getEmployee(token, employeeId) {
+  try {
+    const response = await fetch(`${BASE_URL}/employees/${employeeId}`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get employee: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get employee: ${error.message}`);
+  }
+}
+
+export async function createEmployee(token, employeeData) {
+  try {
+    const response = await fetch(`${BASE_URL}/employees`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(employeeData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to create employee: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to create employee: ${error.message}`);
+  }
+}
+
+export async function updateEmployee(token, employeeId, employeeData) {
+  try {
+    const response = await fetch(`${BASE_URL}/employees/${employeeId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(employeeData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to update employee: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to update employee: ${error.message}`);
+  }
+}
+
+export async function deleteEmployee(token, employeeId) {
+  try {
+    const response = await fetch(`${BASE_URL}/employees/${employeeId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to delete employee: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to delete employee: ${error.message}`);
+  }
+}
+
 export async function updateProcedure(token, registerId, procedureId, procedureData) {
   try {
     const response = await fetch(`${BASE_URL}/registers/${registerId}/procedures/${procedureId}`, {

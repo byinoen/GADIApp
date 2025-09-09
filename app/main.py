@@ -25,14 +25,17 @@ schedules_db = [
     {"id": 3, "fecha": "2025-09-09", "turno": "Noche (00:00-08:00)", "empleado": "Carlos López", "empleado_id": 3}
 ]
 
-# Employee mapping
-empleados_map = {
-    1: "Juan Pérez",
-    2: "María García", 
-    3: "Carlos López",
-    4: "Ana Martínez",
-    5: "Pedro Sánchez"
-}
+# Employee database
+empleados_db = [
+    {"id": 1, "nombre": "Juan Pérez", "email": "juan@example.com", "role": "trabajador", "telefono": "+34 123 456 789", "activo": True, "created_at": "2025-09-01 10:00:00"},
+    {"id": 2, "nombre": "María García", "email": "maria@example.com", "role": "trabajador", "telefono": "+34 123 456 790", "activo": True, "created_at": "2025-09-01 10:00:00"},
+    {"id": 3, "nombre": "Carlos López", "email": "carlos@example.com", "role": "trabajador", "telefono": "+34 123 456 791", "activo": True, "created_at": "2025-09-01 10:00:00"},
+    {"id": 4, "nombre": "Ana Martínez", "email": "ana@example.com", "role": "encargado", "telefono": "+34 123 456 792", "activo": True, "created_at": "2025-09-01 10:00:00"},
+    {"id": 5, "nombre": "Pedro Sánchez", "email": "pedro@example.com", "role": "trabajador", "telefono": "+34 123 456 793", "activo": True, "created_at": "2025-09-01 10:00:00"}
+]
+
+# Employee mapping for backward compatibility
+empleados_map = {emp["id"]: emp["nombre"] for emp in empleados_db}
 
 # In-memory storage for tasks
 tasks_db = [
@@ -156,6 +159,87 @@ register_entries_db = []
 @health_router.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+# Employee management endpoints
+employees_router = APIRouter(prefix="/employees", tags=["employees"])
+
+@employees_router.get("")
+async def get_employees(x_demo_token: str = Header(None)):
+    """Get all employees"""
+    # Update empleados_map for backward compatibility
+    global empleados_map
+    empleados_map = {emp["id"]: emp["nombre"] for emp in empleados_db}
+    
+    return {"employees": empleados_db}
+
+@employees_router.get("/{employee_id}")
+async def get_employee(employee_id: int, x_demo_token: str = Header(None)):
+    """Get specific employee"""
+    employee = next((emp for emp in empleados_db if emp["id"] == employee_id), None)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    return {"employee": employee}
+
+@employees_router.post("")
+async def create_employee(employee_data: dict, x_demo_token: str = Header(None)):
+    """Create a new employee"""
+    # Generate new ID
+    new_id = max([emp["id"] for emp in empleados_db], default=0) + 1
+    
+    new_employee = {
+        "id": new_id,
+        "nombre": employee_data["nombre"],
+        "email": employee_data["email"],
+        "role": employee_data.get("role", "trabajador"),
+        "telefono": employee_data.get("telefono", ""),
+        "activo": employee_data.get("activo", True),
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    empleados_db.append(new_employee)
+    
+    # Update empleados_map for backward compatibility
+    global empleados_map
+    empleados_map = {emp["id"]: emp["nombre"] for emp in empleados_db}
+    
+    return {"message": "Employee created", "employee": new_employee}
+
+@employees_router.put("/{employee_id}")
+async def update_employee(employee_id: int, employee_data: dict, x_demo_token: str = Header(None)):
+    """Update employee information"""
+    employee = next((emp for emp in empleados_db if emp["id"] == employee_id), None)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Update fields
+    employee["nombre"] = employee_data.get("nombre", employee["nombre"])
+    employee["email"] = employee_data.get("email", employee["email"])
+    employee["role"] = employee_data.get("role", employee["role"])
+    employee["telefono"] = employee_data.get("telefono", employee["telefono"])
+    employee["activo"] = employee_data.get("activo", employee["activo"])
+    
+    # Update empleados_map for backward compatibility
+    global empleados_map
+    empleados_map = {emp["id"]: emp["nombre"] for emp in empleados_db}
+    
+    return {"message": "Employee updated", "employee": employee}
+
+@employees_router.delete("/{employee_id}")
+async def delete_employee(employee_id: int, x_demo_token: str = Header(None)):
+    """Delete/deactivate employee"""
+    employee = next((emp for emp in empleados_db if emp["id"] == employee_id), None)
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Deactivate instead of delete to maintain data integrity
+    employee["activo"] = False
+    
+    # Update empleados_map for backward compatibility
+    global empleados_map
+    empleados_map = {emp["id"]: emp["nombre"] for emp in empleados_db if emp["activo"]}
+    
+    return {"message": "Employee deactivated", "employee": employee}
 
 @auth_router.post("/login")
 async def login_user(request: dict):
@@ -1058,5 +1142,6 @@ app.include_router(schedules_router)
 app.include_router(tasks_router)
 app.include_router(inbox_router)
 app.include_router(registers_router)
+app.include_router(employees_router)
 
 print("Starting FastAPI backend with CORS configuration")
