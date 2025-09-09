@@ -3,7 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   getRegisters, 
   getRegister, 
-  createRegister, 
+  createRegister,
+  updateRegister,
   createProcedure,
   getRegisterEntries 
 } from '../services/api';
@@ -19,6 +20,7 @@ function ManagementScreen() {
   
   // Register form state
   const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [editingRegister, setEditingRegister] = useState(null);
   const [registerForm, setRegisterForm] = useState({
     nombre: '',
     tipo: 'general',
@@ -40,7 +42,6 @@ function ManagementScreen() {
   });
   
   // Editing states
-  const [editingRegister, setEditingRegister] = useState(null);
   const [editingProcedure, setEditingProcedure] = useState(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'encargado';
@@ -83,17 +84,43 @@ function ManagementScreen() {
     setLoading(true);
     
     try {
-      await createRegister(token, registerForm);
-      alert('Registro creado exitosamente');
+      if (editingRegister) {
+        // Update existing register
+        await updateRegister(token, editingRegister.id, registerForm);
+        alert('Registro actualizado exitosamente');
+      } else {
+        // Create new register
+        await createRegister(token, registerForm);
+        alert('Registro creado exitosamente');
+      }
+      
       setShowRegisterForm(false);
+      setEditingRegister(null);
       setRegisterForm({ nombre: '', tipo: 'general', descripcion: '', campos_personalizados: [] });
       await loadRegisters();
     } catch (error) {
-      console.error('Error creating register:', error);
-      alert('Error al crear registro: ' + error.message);
+      console.error('Error saving register:', error);
+      alert('Error al guardar registro: ' + error.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditRegister = (register) => {
+    setEditingRegister(register);
+    setRegisterForm({
+      nombre: register.nombre,
+      tipo: register.tipo,
+      descripcion: register.descripcion,
+      campos_personalizados: register.campos_personalizados || []
+    });
+    setShowRegisterForm(true);
+  };
+
+  const handleCancelRegisterForm = () => {
+    setShowRegisterForm(false);
+    setEditingRegister(null);
+    setRegisterForm({ nombre: '', tipo: 'general', descripcion: '', campos_personalizados: [] });
   };
 
   const handleCreateProcedure = async (e) => {
@@ -351,31 +378,42 @@ function ManagementScreen() {
 
           <div className="registers-grid">
             {registers.map((register) => (
-              <div 
-                key={register.id} 
-                className={`register-card ${selectedRegister === register.id ? 'selected' : ''}`}
-                onClick={() => loadRegisterDetails(register.id)}
-              >
-                <div className="register-header">
-                  <h3>{register.nombre}</h3>
-                  <span className={`register-type ${register.tipo}`}>
-                    {register.tipo}
-                  </span>
-                </div>
-                <p className="register-description">{register.descripcion}</p>
-                <div className="register-status">
-                  <span className={`status-badge ${register.activo ? 'active' : 'inactive'}`}>
-                    {register.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                  <span className="created-date">
-                    Creado: {new Date(register.created_at).toLocaleDateString('es-ES')}
-                  </span>
-                </div>
-                {register.campos_personalizados && register.campos_personalizados.length > 0 && (
-                  <div className="custom-fields-info">
-                    <small>📝 {register.campos_personalizados.length} campos personalizados definidos</small>
+              <div key={register.id} className="register-card-container">
+                <div 
+                  className={`register-card ${selectedRegister === register.id ? 'selected' : ''}`}
+                  onClick={() => loadRegisterDetails(register.id)}
+                >
+                  <div className="register-header">
+                    <h3>{register.nombre}</h3>
+                    <span className={`register-type ${register.tipo}`}>
+                      {register.tipo}
+                    </span>
                   </div>
-                )}
+                  <p className="register-description">{register.descripcion}</p>
+                  <div className="register-status">
+                    <span className={`status-badge ${register.activo ? 'active' : 'inactive'}`}>
+                      {register.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                    <span className="created-date">
+                      Creado: {new Date(register.created_at).toLocaleDateString('es-ES')}
+                    </span>
+                  </div>
+                  {register.campos_personalizados && register.campos_personalizados.length > 0 && (
+                    <div className="custom-fields-info">
+                      <small>📝 {register.campos_personalizados.length} campos personalizados definidos</small>
+                    </div>
+                  )}
+                </div>
+                <button 
+                  className="edit-register-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditRegister(register);
+                  }}
+                  title="Editar registro"
+                >
+                  ✏️ Editar
+                </button>
               </div>
             ))}
           </div>
@@ -478,7 +516,7 @@ function ManagementScreen() {
       {showRegisterForm && (
         <div className="modal-overlay" onClick={() => setShowRegisterForm(false)}>
           <div className="modal-content register-modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Crear Nuevo Registro</h2>
+            <h2>{editingRegister ? 'Editar Registro' : 'Crear Nuevo Registro'}</h2>
             
             <form onSubmit={handleCreateRegister}>
               <div className="input-group">

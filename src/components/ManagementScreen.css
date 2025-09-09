@@ -658,6 +658,37 @@
   background: #c82333;
 }
 
+/* Register card editing styles */
+.register-card-container {
+  position: relative;
+}
+
+.edit-register-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+  z-index: 10;
+}
+
+.edit-register-btn:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.edit-register-btn:active {
+  transform: translateY(0);
+}
+
 /* Mobile responsive for custom fields */
 @media (max-width: 768px) {
   .field-inputs {
@@ -678,5 +709,11 @@
   .remove-option-btn {
     align-self: center;
     width: 60px;
+  }
+  
+  .edit-register-btn {
+    position: static;
+    margin-top: 8px;
+    width: 100%;
   }
 }
