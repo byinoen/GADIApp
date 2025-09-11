@@ -1,0 +1,53 @@
+Context:
+The WEB app is already functional and uses mocks. We now want the Employees screen to use the real FastAPI backend (/employees).
+Do NOT reset existing features. Keep all Spanish UI labels.
+
+Change scope:
+Edit/Create ONLY:
+- src/services/apiClient.js            # already exists from W-API3
+- src/services/employees.api.js       # backend implementation
+- src/services/index.js               # switch export if needed
+- src/pages/Employees.jsx             # the page that lists/creates/edits/deletes employees
+- src/context/AuthContext.jsx         # ONLY if a tiny helper is needed (avoid large changes)
+
+Task:
+1) Services:
+   - Ensure apiClient.request() attaches "X-Demo-Token" (already from W-API3); if missing, add it.
+   - Implement src/services/employees.api.js:
+       export async function listEmployees()
+       export async function createEmployee(dto)     // { nombre, email, role }
+       export async function updateEmployee(id,dto)  // partial update
+       export async function deleteEmployee(id)
+     All functions call `${BASE_URL}/employees` endpoints and return parsed JSON or throw on !ok.
+
+2) Page wiring (Employees.jsx):
+   - On mount: call listEmployees() and render the table/list.
+   - Add Spanish headings: "Empleados", columns: "Nombre", "Correo", "Rol", "Acciones".
+   - Create ("Añadir empleado") shows a small inline form (nombre, email, role=["Trabajador","Encargado","Administrador"]).
+   - Edit/Eliminar actions per row.
+
+3) Role gating (UI + client guard):
+   - Read user from AuthContext.
+   - Helper hasRole(...roles) that checks user?.role.
+   - Only show create/edit/delete controls if hasRole("Encargado","Administrador").
+   - If not allowed (Trabajador), hide controls and show note:
+       "Solo lectura: no tiene permisos para gestionar empleados."
+
+4) 403 handling (server):
+   - Wrap create/update/delete in try/catch.
+   - If response is 403, show Spanish error:
+       "Permiso denegado por el servidor."
+   - For other errors, show:
+       "Error al procesar la solicitud."
+   - Disable the submit/delete buttons while awaiting.
+
+5) Keep UX minimal:
+   - No design overhaul. Maintain current styling patterns.
+   - Preserve existing mocks importable, but the default export path should use the API implementation.
+
+Acceptance criteria:
+- As "Trabajador": the Employees page lists data but shows no create/edit/delete; the note appears ("Solo lectura...").
+- As "Encargado" or "Administrador": can create, edit, and delete employees successfully against the backend.
+- Network tab shows calls to `${BASE_URL}/employees`.
+- 403 responses are caught and surfaced with the Spanish message; no unhandled promise rejections.
+- Only the files in Change scope are modified; build passes with no new console errors.
