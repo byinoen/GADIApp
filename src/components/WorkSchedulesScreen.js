@@ -20,6 +20,23 @@ export default function WorkSchedulesScreen() {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const { token, user } = useAuth();
 
+  // Role-based helper function
+  const hasRole = (...allowedRoles) => {
+    if (!user?.role) return false;
+    
+    // Map Spanish role names to backend role values
+    const roleMapping = {
+      'Trabajador': 'trabajador',
+      'Encargado': 'encargado', 
+      'Administrador': 'admin'
+    };
+    
+    return allowedRoles.some(role => {
+      const backendRole = roleMapping[role] || role.toLowerCase();
+      return user.role === backendRole;
+    });
+  };
+
   const TURNOS_OPTIONS = [
     'Mañana (08:00-16:00)',
     'Tarde (16:00-00:00)', 
@@ -97,6 +114,12 @@ export default function WorkSchedulesScreen() {
   const handleCreateSchedule = async (e) => {
     e.preventDefault();
     
+    // Defensive check before API call
+    if (!hasRole('Encargado', 'Administrador')) {
+      alert('No tiene permisos para esta acción');
+      return;
+    }
+    
     if (!formData.fecha) {
       alert('Por favor ingrese una fecha');
       return;
@@ -120,13 +143,19 @@ export default function WorkSchedulesScreen() {
       loadSchedules(); // Refresh the list
     } catch (error) {
       console.error('Error creating schedule:', error);
-      alert('Error al añadir turno: ' + error.message);
+      
+      // Handle 403 errors specifically
+      if (error.message.includes('403') || error.message.includes('Forbidden') || error.message.includes('permission')) {
+        alert('Permiso denegado por el servidor');
+      } else {
+        alert('Error al procesar la solicitud');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const canCreateSchedules = user?.role === 'admin' || user?.role === 'encargado';
+  const canCreateSchedules = hasRole('Encargado', 'Administrador');
 
   useEffect(() => {
     if (token) {
@@ -160,7 +189,7 @@ export default function WorkSchedulesScreen() {
           <div className="header-text">
             <h1 className="schedules-title">Horarios de Trabajo</h1>
             <p className="schedules-subtitle">
-              {user?.role === 'trabajador' 
+              {hasRole('Trabajador') 
                 ? 'Mis horarios asignados' 
                 : 'Todos los horarios del equipo'}
             </p>
@@ -180,6 +209,23 @@ export default function WorkSchedulesScreen() {
           Actualizar
         </button>
       </div>
+
+      {/* Read-only notice for Trabajador */}
+      {hasRole('Trabajador') && (
+        <div className="read-only-notice">
+          <p style={{
+            backgroundColor: '#f8f9fa',
+            color: '#6c757d',
+            padding: '10px 15px',
+            borderRadius: '6px',
+            margin: '15px 0',
+            border: '1px solid #dee2e6',
+            fontSize: '14px'
+          }}>
+            📖 Solo lectura: no tiene permisos para crear o editar turnos.
+          </p>
+        </div>
+      )}
 
       <div className="schedules-content">
         {schedules.length === 0 ? (

@@ -1,0 +1,50 @@
+Context:
+The WEB app is already functional and now connected (or about to be) to the FastAPI backend.
+Do NOT reset any existing features. We only want to enforce role-based UI gating and handle backend 403s gracefully in Spanish.
+
+Change scope:
+Edit ONLY:
+- src/pages/Horarios.jsx
+- src/context/AuthContext.jsx (ONLY if a small helper is needed; otherwise leave it)
+
+Task:
+1) In Horarios.jsx, read the current user/role from AuthContext.
+   - Define a small helper hasRole(...roles) that returns true if user?.role is one of the allowed roles.
+   - Roles used: "Trabajador", "Encargado", "Administrador".
+
+2) UI gating:
+   - If hasRole("Encargado","Administrador"): show the create ("Añadir turno") UI, edit and delete actions.
+   - If NOT: hide those controls entirely AND show a small Spanish note on the page:
+     "Solo lectura: no tiene permisos para crear o editar turnos."
+   - Ensure the list rendering remains visible for all roles.
+
+3) Defensive checks before calling API:
+   - Before calling create/update/delete schedule functions, check hasRole("Encargado","Administrador").
+   - If not allowed, do not call the API; instead show a Spanish toast/alert:
+     "Permiso denegado" (or "No tiene permisos para esta acción").
+
+4) 403 handling from backend:
+   - Wrap API calls (create/update/delete) in try/catch.
+   - If the response indicates 403 from backend, show a Spanish error:
+     "Permiso denegado por el servidor."
+   - For other errors, show:
+     "Error al procesar la solicitud."
+
+5) UX details (no redesign):
+   - While saving/updating/deleting, disable the corresponding button(s).
+   - Keep Spanish labels; do not rename existing UI texts.
+
+Acceptance criteria:
+- As "Trabajador":
+  * The page shows the list.
+  * The "Añadir turno" button and edit/delete actions are NOT visible.
+  * A small note appears: "Solo lectura: no tiene permisos para crear o editar turnos."
+  * No network calls are made for create/edit/delete (controls hidden).
+
+- As "Encargado" or "Administrador":
+  * Create/edit/delete controls are visible and functional.
+  * If the server returns 403 for any reason, a Spanish error is shown: "Permiso denegado por el servidor."
+  * Other failures show: "Error al procesar la solicitud."
+
+- Only the specified files are changed. Build passes with no new console errors.
+- Existing functionality (listing, creating, etc.) remains intact for allowed roles.
