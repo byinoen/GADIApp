@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getSchedules, createSchedule, getScheduleTasks } from '../services/api';
+import { listSchedules, createSchedule } from '../services/schedules.api.js';
+import { getScheduleTasks } from '../services/api'; // Keep this for tasks functionality
 import { useAuth } from '../contexts/AuthContext';
 import './WorkSchedulesScreen.css';
 
@@ -36,10 +37,11 @@ export default function WorkSchedulesScreen() {
   const loadSchedules = async () => {
     try {
       setLoading(true);
-      const response = await getSchedules(token);
-      setSchedules(response.schedules);
+      const schedules = await listSchedules();
+      setSchedules(schedules);
     } catch (error) {
-      alert('Error al cargar los horarios');
+      console.error('Error loading schedules:', error);
+      alert('Error al cargar los horarios: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -47,10 +49,11 @@ export default function WorkSchedulesScreen() {
 
   const handleRefresh = async () => {
     try {
-      const response = await getSchedules(token);
-      setSchedules(response.schedules);
+      const schedules = await listSchedules();
+      setSchedules(schedules);
     } catch (error) {
-      alert('Error al cargar los horarios');
+      console.error('Error refreshing schedules:', error);
+      alert('Error al actualizar los horarios: ' + error.message);
     }
   };
 
@@ -101,7 +104,7 @@ export default function WorkSchedulesScreen() {
 
     setSubmitting(true);
     try {
-      await createSchedule(token, {
+      await createSchedule({
         fecha: formData.fecha,
         turno: formData.turno,
         empleado_id: parseInt(formData.empleado_id)
@@ -116,6 +119,7 @@ export default function WorkSchedulesScreen() {
       });
       loadSchedules(); // Refresh the list
     } catch (error) {
+      console.error('Error creating schedule:', error);
       alert('Error al añadir turno: ' + error.message);
     } finally {
       setSubmitting(false);
