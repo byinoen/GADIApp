@@ -9,7 +9,7 @@ import './App.css';
 
 // Main app component that handles navigation
 function AppContent() {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, currentUser, logout } = useAuth();
   const [currentView, setCurrentView] = useState('schedules');
   const isManager = user?.role === 'admin' || user?.role === 'encargado';
 
@@ -52,7 +52,7 @@ function AppContent() {
           </div>
           <div className="nav-user">
             <span className="user-info">
-              {user?.email} ({user?.role})
+              Hola, {currentUser?.nombre || user?.email}
             </span>
             <button className="logout-button" onClick={logout}>
               Cerrar Sesión

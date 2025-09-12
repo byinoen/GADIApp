@@ -29,14 +29,19 @@ export async function login(email, password) {
 }
 
 /**
+ * Get current user info from server
+ * @returns {Promise} - Current user data
+ */
+export async function me() {
+  const response = await request('/auth/me');
+  return response.user;
+}
+
+/**
  * Logout user by clearing localStorage
  */
 export function logout() {
   localStorage.removeItem('auth');
-  // Clean up legacy storage keys if they exist
-  localStorage.removeItem('token');
-  localStorage.removeItem('X-Demo-Token');
-  localStorage.removeItem('user');
 }
 
 /**
@@ -49,18 +54,6 @@ export function getStoredAuth() {
     if (authData) {
       return JSON.parse(authData);
     }
-    
-    // Fallback for legacy storage format
-    const userData = localStorage.getItem('user');
-    const token = localStorage.getItem('token') || localStorage.getItem('X-Demo-Token');
-    
-    if (userData && token) {
-      return {
-        access_token: token,
-        user: JSON.parse(userData)
-      };
-    }
-    
     return null;
   } catch (error) {
     console.error('Error parsing stored auth data:', error);

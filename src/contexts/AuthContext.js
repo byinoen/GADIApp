@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
       setUser(storedAuth.user);
       setToken(storedAuth.access_token);
       setCurrentUser({
-        nombre: storedAuth.user.name || storedAuth.user.email,
+        nombre: storedAuth.user.nombre || storedAuth.user.name || storedAuth.user.email,
         role: storedAuth.user.role,
         employee_id: storedAuth.user.id
       });
@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
         setUser(response.user);
         setToken(response.access_token);
         setCurrentUser({
-          nombre: response.user.name || response.user.email,
+          nombre: response.user.nombre || response.user.name || response.user.email,
           role: response.user.role,
           employee_id: response.user.id
         });
@@ -61,7 +61,7 @@ export function AuthProvider({ children }) {
     setUser(userData);
     setToken(userToken);
     setCurrentUser({
-      nombre: userData.name || userData.email,
+      nombre: userData.nombre || userData.name || userData.email,
       role: userData.role,
       employee_id: userData.id
     });
