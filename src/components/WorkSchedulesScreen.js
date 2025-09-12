@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { listSchedules, createSchedule } from '../services/schedules.api.js';
+import { listTasks } from '../services/tasks.api.js';
+import { listEmployees } from '../services/employees.api.js';
 import { getScheduleTasks } from '../services/api'; // Keep this for tasks functionality
 import { useAuth } from '../contexts/AuthContext';
 import './WorkSchedulesScreen.css';
 
 export default function WorkSchedulesScreen() {
   const [schedules, setSchedules] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     fecha: '',
     turno: 'Mañana (08:00-16:00)',
-    empleado_id: '1'
+    empleado_id: '',
+    task_id: ''
   });
   const [submitting, setSubmitting] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
@@ -43,24 +48,40 @@ export default function WorkSchedulesScreen() {
     'Noche (00:00-08:00)'
   ];
 
-  const EMPLEADOS_OPTIONS = [
-    { id: 1, name: 'Juan Pérez' },
-    { id: 2, name: 'María García' },
-    { id: 3, name: 'Carlos López' },
-    { id: 4, name: 'Ana Martínez' },
-    { id: 5, name: 'Pedro Sánchez' }
-  ];
+  // Get employee name by ID
+  const getEmployeeName = (employeeId) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    return employee ? employee.nombre : `Empleado ${employeeId}`;
+  };
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      // Load schedules, employees, and tasks in parallel
+      const [schedulesData, employeesData, tasksData] = await Promise.all([
+        listSchedules(),
+        listEmployees(),
+        listTasks()
+      ]);
+      
+      setSchedules(schedulesData);
+      setEmployees(employeesData);
+      setTasks(tasksData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      alert('Error al cargar los datos: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSchedules = async () => {
     try {
-      setLoading(true);
       const schedules = await listSchedules();
       setSchedules(schedules);
     } catch (error) {
       console.error('Error loading schedules:', error);
       alert('Error al cargar los horarios: ' + error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -127,18 +148,26 @@ export default function WorkSchedulesScreen() {
 
     setSubmitting(true);
     try {
-      await createSchedule({
+      const scheduleData = {
         fecha: formData.fecha,
         turno: formData.turno,
         empleado_id: parseInt(formData.empleado_id)
-      });
+      };
+      
+      // Include task_id if a task is selected
+      if (formData.task_id) {
+        scheduleData.task_id = parseInt(formData.task_id);
+      }
+      
+      await createSchedule(scheduleData);
       
       alert('Turno añadido exitosamente');
       setShowForm(false);
       setFormData({
         fecha: '',
         turno: 'Mañana (08:00-16:00)',
-        empleado_id: '1'
+        empleado_id: '',
+        task_id: ''
       });
       loadSchedules(); // Refresh the list
     } catch (error) {
@@ -159,7 +188,7 @@ export default function WorkSchedulesScreen() {
 
   useEffect(() => {
     if (token) {
-      loadSchedules();
+      loadData();
     }
   }, [token]);
 
@@ -244,7 +273,7 @@ export default function WorkSchedulesScreen() {
                   <span className="schedule-date">{formatDate(schedule.fecha)}</span>
                   <span className="schedule-shift">{schedule.turno}</span>
                 </div>
-                <p className="schedule-employee">Empleado: {schedule.empleado}</p>
+                <p className="schedule-employee">Empleado: {getEmployeeName(schedule.empleado_id)}</p>
                 <div className="click-hint">📋 Haz clic para ver tareas</div>
               </div>
             ))}
@@ -289,20 +318,35 @@ export default function WorkSchedulesScreen() {
 
               <div className="input-group">
                 <label className="input-label">Empleado</label>
-                <div className="picker-container">
-                  {EMPLEADOS_OPTIONS.map((empleado) => (
-                    <button
-                      key={empleado.id}
-                      type="button"
-                      className={`picker-option ${
-                        formData.empleado_id === empleado.id.toString() ? 'picker-option-selected' : ''
-                      }`}
-                      onClick={() => setFormData({...formData, empleado_id: empleado.id.toString()})}
-                    >
-                      {empleado.name}
-                    </button>
+                <select
+                  className="text-input"
+                  value={formData.empleado_id}
+                  onChange={(e) => setFormData({...formData, empleado_id: e.target.value})}
+                  required
+                >
+                  <option value="">Seleccionar empleado...</option>
+                  {employees.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.nombre}
+                    </option>
                   ))}
-                </div>
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Tarea (Opcional)</label>
+                <select
+                  className="text-input"
+                  value={formData.task_id}
+                  onChange={(e) => setFormData({...formData, task_id: e.target.value})}
+                >
+                  <option value="">Sin tarea asignada</option>
+                  {tasks.map((task) => (
+                    <option key={task.id} value={task.id}>
+                      {task.titulo}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="modal-buttons">
@@ -332,7 +376,7 @@ export default function WorkSchedulesScreen() {
           <div className="modal-content tasks-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">
-                📋 Tareas para {selectedSchedule.empleado}
+                📋 Tareas para {getEmployeeName(selectedSchedule.empleado_id)}
               </h2>
               <p className="modal-subtitle">
                 {formatDate(selectedSchedule.fecha)} - {selectedSchedule.turno}
