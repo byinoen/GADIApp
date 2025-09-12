@@ -25,13 +25,13 @@ schedules_db = [
     {"id": 3, "fecha": "2025-09-09", "turno": "Noche (00:00-08:00)", "empleado": "Carlos López", "empleado_id": 3}
 ]
 
-# Employee database
+# Employee database with authentication data
 empleados_db = [
-    {"id": 1, "nombre": "Juan Pérez", "email": "juan@example.com", "role": "trabajador", "telefono": "+34 123 456 789", "activo": True, "created_at": "2025-09-01 10:00:00"},
-    {"id": 2, "nombre": "María García", "email": "maria@example.com", "role": "trabajador", "telefono": "+34 123 456 790", "activo": True, "created_at": "2025-09-01 10:00:00"},
-    {"id": 3, "nombre": "Carlos López", "email": "carlos@example.com", "role": "trabajador", "telefono": "+34 123 456 791", "activo": True, "created_at": "2025-09-01 10:00:00"},
-    {"id": 4, "nombre": "Ana Martínez", "email": "ana@example.com", "role": "encargado", "telefono": "+34 123 456 792", "activo": True, "created_at": "2025-09-01 10:00:00"},
-    {"id": 5, "nombre": "Pedro Sánchez", "email": "pedro@example.com", "role": "trabajador", "telefono": "+34 123 456 793", "activo": True, "created_at": "2025-09-01 10:00:00"}
+    {"id": 1, "nombre": "Juan Pérez", "email": "juan@example.com", "role": "trabajador", "telefono": "+34 123 456 789", "activo": True, "created_at": "2025-09-01 10:00:00", "password": "1234"},
+    {"id": 2, "nombre": "María García", "email": "maria@example.com", "role": "trabajador", "telefono": "+34 123 456 790", "activo": True, "created_at": "2025-09-01 10:00:00", "password": "1234"},
+    {"id": 3, "nombre": "Carlos López", "email": "carlos@example.com", "role": "trabajador", "telefono": "+34 123 456 791", "activo": True, "created_at": "2025-09-01 10:00:00", "password": "1234"},
+    {"id": 4, "nombre": "Ana Martínez", "email": "ana@example.com", "role": "encargado", "telefono": "+34 123 456 792", "activo": True, "created_at": "2025-09-01 10:00:00", "password": "1234"},
+    {"id": 5, "nombre": "Pedro Sánchez", "email": "pedro@example.com", "role": "trabajador", "telefono": "+34 123 456 793", "activo": True, "created_at": "2025-09-01 10:00:00", "password": "1234"}
 ]
 
 # Employee mapping for backward compatibility
@@ -187,6 +187,9 @@ async def create_employee(employee_data: dict, x_demo_token: str = Header(None))
     # Generate new ID
     new_id = max([emp["id"] for emp in empleados_db], default=0) + 1
     
+    # Set default password if not provided
+    default_password = employee_data.get("password", "1234")
+    
     new_employee = {
         "id": new_id,
         "nombre": employee_data["nombre"],
@@ -194,6 +197,7 @@ async def create_employee(employee_data: dict, x_demo_token: str = Header(None))
         "role": employee_data.get("role", "trabajador"),
         "telefono": employee_data.get("telefono", ""),
         "activo": employee_data.get("activo", True),
+        "password": default_password,
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     
@@ -246,17 +250,30 @@ async def login_user(request: dict):
     email = request.get("email", "")
     password = request.get("password", "")
     
-    # Simple demo authentication
-    users = {
-        "admin@example.com": {"id": 1, "email": "admin@example.com", "role": "admin"},
-        "encargado@example.com": {"id": 2, "email": "encargado@example.com", "role": "encargado"},
-        "trabajador@example.com": {"id": 3, "email": "trabajador@example.com", "role": "trabajador"}
+    # Check hardcoded admin users first
+    hardcoded_users = {
+        "admin@example.com": {"id": 1, "email": "admin@example.com", "role": "admin", "nombre": "Administrador"},
+        "encargado@example.com": {"id": 2, "email": "encargado@example.com", "role": "encargado", "nombre": "Encargado"},
+        "trabajador@example.com": {"id": 3, "email": "trabajador@example.com", "role": "trabajador", "nombre": "Trabajador"}
     }
     
-    if email in users and password == "1234":
-        return {"token": "demo", "user": users[email]}
-    else:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    # First check hardcoded users
+    if email in hardcoded_users and password == "1234":
+        return {"access_token": "demo", "user": hardcoded_users[email]}
+    
+    # Then check dynamic employees from database
+    for employee in empleados_db:
+        if employee["email"] == email and employee.get("password", "1234") == password and employee["activo"]:
+            user_data = {
+                "id": employee["id"],
+                "email": employee["email"],
+                "role": employee["role"],
+                "nombre": employee["nombre"]
+            }
+            return {"access_token": "demo", "user": user_data}
+    
+    # No match found
+    raise HTTPException(status_code=401, detail="Invalid credentials")
 
 @schedules_router.get("")
 async def get_schedules(x_demo_token: str = Header(None)):
