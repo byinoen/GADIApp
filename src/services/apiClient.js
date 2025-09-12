@@ -23,13 +23,23 @@ console.log('API Base URL:', BASE_URL);
 export async function request(path, options = {}) {
   const url = `${BASE_URL}${path}`;
   
-  // Get token from localStorage if available
-  const token = localStorage.getItem('token') || localStorage.getItem('X-Demo-Token');
+  // Get auth data from localStorage
+  const authData = localStorage.getItem('auth');
+  let accessToken = null;
+  
+  if (authData) {
+    try {
+      const auth = JSON.parse(authData);
+      accessToken = auth.access_token;
+    } catch (e) {
+      console.error('Error parsing auth data:', e);
+    }
+  }
   
   // Merge default headers with provided headers
   const headers = {
     'Content-Type': 'application/json',
-    ...(token && { 'X-Demo-Token': token }),
+    ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
     ...options.headers
   };
 

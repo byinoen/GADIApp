@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, logout as apiLogout, getStoredUser, getStoredToken } from '../services/auth.api.js';
+import { login as apiLogin, logout as apiLogout, getStoredAuth } from '../services/auth.api.js';
 
 const AuthContext = createContext();
 
@@ -7,15 +7,20 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
-    const storedUser = getStoredUser();
-    const storedToken = getStoredToken();
+    const storedAuth = getStoredAuth();
     
-    if (storedUser && storedToken) {
-      setUser(storedUser);
-      setToken(storedToken);
+    if (storedAuth && storedAuth.access_token && storedAuth.user) {
+      setUser(storedAuth.user);
+      setToken(storedAuth.access_token);
+      setCurrentUser({
+        nombre: storedAuth.user.name || storedAuth.user.email,
+        role: storedAuth.user.role,
+        employee_id: storedAuth.user.id
+      });
       setIsAuthenticated(true);
     }
   }, []);
@@ -24,9 +29,14 @@ export function AuthProvider({ children }) {
     try {
       const response = await apiLogin(email, password);
       
-      if (response.user && response.token) {
+      if (response.user && response.access_token) {
         setUser(response.user);
-        setToken(response.token);
+        setToken(response.access_token);
+        setCurrentUser({
+          nombre: response.user.name || response.user.email,
+          role: response.user.role,
+          employee_id: response.user.id
+        });
         setIsAuthenticated(true);
         return response;
       } else {
@@ -42,6 +52,7 @@ export function AuthProvider({ children }) {
     apiLogout(); // Clears localStorage
     setUser(null);
     setToken(null);
+    setCurrentUser(null);
     setIsAuthenticated(false);
   };
 
@@ -49,16 +60,19 @@ export function AuthProvider({ children }) {
   const login = (userData, userToken) => {
     setUser(userData);
     setToken(userToken);
+    setCurrentUser({
+      nombre: userData.name || userData.email,
+      role: userData.role,
+      employee_id: userData.id
+    });
     setIsAuthenticated(true);
     
-    // Persist to localStorage for consistency
-    if (userToken) {
-      localStorage.setItem('token', userToken);
-      localStorage.setItem('X-Demo-Token', userToken);
-    }
-    if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData));
-    }
+    // Persist to localStorage in new format
+    const authData = {
+      access_token: userToken,
+      user: userData
+    };
+    localStorage.setItem('auth', JSON.stringify(authData));
   };
 
   // Legacy logout method for backward compatibility
@@ -67,6 +81,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     token,
+    currentUser,
     isAuthenticated,
     signIn,
     signOut,

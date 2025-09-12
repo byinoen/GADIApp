@@ -4,7 +4,7 @@ import { request } from './apiClient.js';
  * Authenticate user with email and password
  * @param {string} email - User email
  * @param {string} password - User password 
- * @returns {Promise} - Auth response with token and user data
+ * @returns {Promise} - Auth response with access_token and user data
  */
 export async function login(email, password) {
   const response = await request('/auth/login', {
@@ -12,26 +12,60 @@ export async function login(email, password) {
     body: JSON.stringify({ email, password })
   });
 
-  // Save authentication data to localStorage
-  if (response.token) {
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('X-Demo-Token', response.token);
-  }
-  
-  if (response.user) {
-    localStorage.setItem('user', JSON.stringify(response.user));
+  // Handle both new JWT format and legacy token format
+  const accessToken = response.access_token || response.token;
+  const user = response.user;
+
+  if (accessToken && user) {
+    // Store auth data in localStorage
+    const authData = {
+      access_token: accessToken,
+      user: user
+    };
+    localStorage.setItem('auth', JSON.stringify(authData));
   }
 
-  return response;
+  return { access_token: accessToken, user: user };
 }
 
 /**
  * Logout user by clearing localStorage
  */
 export function logout() {
+  localStorage.removeItem('auth');
+  // Clean up legacy storage keys if they exist
   localStorage.removeItem('token');
   localStorage.removeItem('X-Demo-Token');
   localStorage.removeItem('user');
+}
+
+/**
+ * Get stored auth data from localStorage
+ * @returns {object|null} - Auth data with access_token and user, or null if not found
+ */
+export function getStoredAuth() {
+  try {
+    const authData = localStorage.getItem('auth');
+    if (authData) {
+      return JSON.parse(authData);
+    }
+    
+    // Fallback for legacy storage format
+    const userData = localStorage.getItem('user');
+    const token = localStorage.getItem('token') || localStorage.getItem('X-Demo-Token');
+    
+    if (userData && token) {
+      return {
+        access_token: token,
+        user: JSON.parse(userData)
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing stored auth data:', error);
+    return null;
+  }
 }
 
 /**
@@ -39,19 +73,15 @@ export function logout() {
  * @returns {object|null} - User data or null if not found
  */
 export function getStoredUser() {
-  try {
-    const userData = localStorage.getItem('user');
-    return userData ? JSON.parse(userData) : null;
-  } catch (error) {
-    console.error('Error parsing stored user data:', error);
-    return null;
-  }
+  const auth = getStoredAuth();
+  return auth ? auth.user : null;
 }
 
 /**
- * Get stored token from localStorage
- * @returns {string|null} - Token or null if not found
+ * Get stored access token from localStorage
+ * @returns {string|null} - Access token or null if not found
  */
 export function getStoredToken() {
-  return localStorage.getItem('token') || localStorage.getItem('X-Demo-Token');
+  const auth = getStoredAuth();
+  return auth ? auth.access_token : null;
 }
