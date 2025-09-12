@@ -1,5 +1,18 @@
 // Base API client with environment configuration
-export const BASE_URL = import.meta.env?.VITE_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Use Replit domain for API calls instead of localhost
+const getReplitDomain = () => {
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    // Convert frontend domain to backend domain (port 8000)
+    return `https://${hostname.replace(':5000', '')}:8000`;
+  }
+  return 'http://localhost:8000';
+};
+
+export const BASE_URL = import.meta.env?.VITE_API_URL || process.env.REACT_APP_API_URL || getReplitDomain();
+
+// Log the API base URL for debugging
+console.log('API Base URL:', BASE_URL);
 
 /**
  * Makes HTTP requests to the API server

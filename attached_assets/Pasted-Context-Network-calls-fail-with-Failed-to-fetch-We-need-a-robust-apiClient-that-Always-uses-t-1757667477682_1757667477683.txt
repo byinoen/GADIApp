@@ -1,0 +1,66 @@
+Context:
+Network calls fail with "Failed to fetch". We need a robust apiClient that:
+- Always uses the HTTPS backend URL from env
+- Avoids double slashes in paths
+- Sends JSON headers and X-Demo-Token when available
+- Throws readable errors
+
+Change scope:
+Create/Edit ONLY:
+- src/services/apiClient.js
+
+Task:
+Replace src/services/apiClient.js with EXACTLY this:
+
+----------------------------------------------------
+const raw =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
+  (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL) ||
+  '';
+
+export const BASE_URL = String(raw).trim().replace(/\/+$/, ''); // strip trailing slash
+
+export async function request(path, options = {}) {
+  const url = `${BASE_URL}${path?.startsWith('/') ? path : `/${path || ''}`}`.replace(/([^:]\/)\/+/g, '$1'); // single slash
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  // attach demo token if present
+  try {
+    const auth = JSON.parse(localStorage.getItem('auth') || 'null');
+    if (auth?.token) headers['X-Demo-Token'] = auth.token;
+  } catch {}
+
+  let res;
+  try {
+    res = await fetch(url, { ...options, headers });
+  } catch (e) {
+    // network/setup errors
+    throw new Error(`Network error: ${e?.message || e}`);
+  }
+
+  if (!res.ok) {
+    let detail;
+    try { detail = await res.json(); } catch {}
+    const msg = detail?.detail || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+// Small self-check in dev (remove later if you want)
+if (typeof window !== 'undefined') {
+  console.log('[apiClient] BASE_URL =', BASE_URL);
+}
+----------------------------------------------------
+
+Acceptance criteria:
+- Build succeeds.
+- Console logs: "[apiClient] BASE_URL = https://<your-backend>.replit.dev"
+- Network requests from services use single-slash URLs like "https://.../schedules" (no //).
+- If backend is reachable, no more "Failed to fetch". Otherwise a clear "Network error: ..." appears.
+- No other files are modified.
