@@ -5,6 +5,7 @@ import WorkSchedulesScreen from './components/WorkSchedulesScreen';
 import TasksScreen from './components/TasksScreen';
 import RegisterScreen from './components/RegisterScreen';
 import ManagementScreen from './components/ManagementScreen';
+import AdminUsers from './components/AdminUsers';
 import './App.css';
 
 // Main app component that handles navigation
@@ -12,6 +13,7 @@ function AppContent() {
   const { isAuthenticated, user, currentUser, logout } = useAuth();
   const [currentView, setCurrentView] = useState('schedules');
   const isManager = user?.role === 'admin' || user?.role === 'encargado';
+  const isAdmin = user?.role === 'admin';
 
   if (!isAuthenticated) {
     return <LoginScreen />;
@@ -49,6 +51,14 @@ function AppContent() {
                 🔧 Gestión
               </button>
             )}
+            {isAdmin && (
+              <button 
+                className={`nav-tab ${currentView === 'users' ? 'active' : ''}`}
+                onClick={() => setCurrentView('users')}
+              >
+                👥 Usuarios
+              </button>
+            )}
           </div>
           <div className="nav-user">
             <span className="user-info">
@@ -66,6 +76,7 @@ function AppContent() {
         {currentView === 'tasks' && <TasksScreen />}
         {currentView === 'registers' && <RegisterScreen />}
         {currentView === 'management' && <ManagementScreen />}
+        {currentView === 'users' && <AdminUsers />}
       </main>
     </div>
   );
