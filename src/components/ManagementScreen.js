@@ -494,23 +494,47 @@ function ManagementScreen() {
     setUserForm({ nombre: '', email: '', role: 'trabajador', telefono: '', activo: true, password: '' });
   };
 
-  const handleAddRole = () => {
+  const handleAddRole = async () => {
     if (roleForm.value && roleForm.label) {
-      if (editingRole) {
-        setAvailableRoles(roles => roles.map(role => 
-          role.value === editingRole.value ? { ...roleForm } : role
-        ));
-        alert('Rol actualizado exitosamente');
-      } else {
-        if (availableRoles.find(role => role.value === roleForm.value)) {
-          alert('Ya existe un rol con ese valor');
-          return;
+      try {
+        setLoading(true);
+        
+        if (editingRole) {
+          // For editing existing roles, only update local state for now
+          setAvailableRoles(roles => roles.map(role => 
+            role.value === editingRole.value ? { ...roleForm } : role
+          ));
+          alert('Rol actualizado exitosamente');
+        } else {
+          // Check for duplicates locally first
+          if (availableRoles.find(role => role.value === roleForm.value)) {
+            alert('Ya existe un rol con ese valor');
+            return;
+          }
+          
+          // Create role in backend
+          const roleData = {
+            id: roleForm.value,
+            name: roleForm.label,
+            permissions: [] // Start with no permissions
+          };
+          
+          await rolesApi.create(roleData);
+          
+          // Reload roles from backend to ensure consistency
+          await loadRoles();
+          
+          alert('Rol agregado exitosamente');
         }
-        setAvailableRoles(roles => [...roles, { ...roleForm }]);
-        alert('Rol agregado exitosamente');
+        
+        setRoleForm({ value: '', label: '', description: '' });
+        setEditingRole(null);
+      } catch (error) {
+        console.error('Error creating role:', error);
+        alert('Error al crear el rol: ' + error.message);
+      } finally {
+        setLoading(false);
       }
-      setRoleForm({ value: '', label: '', description: '' });
-      setEditingRole(null);
     }
   };
 
@@ -519,7 +543,7 @@ function ManagementScreen() {
     setRoleForm({ ...role });
   };
 
-  const handleDeleteRole = (roleValue) => {
+  const handleDeleteRole = async (roleValue) => {
     if (['trabajador', 'encargado', 'admin'].includes(roleValue)) {
       alert('No se pueden eliminar los roles predeterminados del sistema');
       return;
@@ -532,8 +556,22 @@ function ManagementScreen() {
     }
     
     if (window.confirm(`¿Está seguro que desea eliminar el rol "${roleValue}"?`)) {
-      setAvailableRoles(roles => roles.filter(role => role.value !== roleValue));
-      alert('Rol eliminado exitosamente');
+      try {
+        setLoading(true);
+        
+        // Delete role from backend
+        await rolesApi.delete(roleValue);
+        
+        // Reload roles from backend to ensure consistency
+        await loadRoles();
+        
+        alert('Rol eliminado exitosamente');
+      } catch (error) {
+        console.error('Error deleting role:', error);
+        alert('Error al eliminar el rol: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
