@@ -1288,17 +1288,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(health_router)
-app.include_router(auth_router)
-app.include_router(schedules_router)
-app.include_router(tasks_router)
-app.include_router(inbox_router)
-app.include_router(registers_router)
-app.include_router(employees_router)
-app.include_router(permissions_router)
-app.include_router(roles_router)
-
 # Permission Management Endpoints
 @permissions_router.get("")
 async def get_permissions(user: Dict[str, Any] = Depends(require_permission("system.manage_permissions"))):
@@ -1420,5 +1409,16 @@ async def get_current_user_permissions(user: Dict[str, Any] = Depends(get_user_f
     """Get current user's permissions"""
     user_permissions = role_permissions_db.get(user.get("role", ""), [])
     return {"user": user, "permissions": user_permissions}
+
+# Include routers (after all endpoints are defined)
+app.include_router(health_router)
+app.include_router(auth_router)
+app.include_router(schedules_router)
+app.include_router(tasks_router)
+app.include_router(inbox_router)
+app.include_router(registers_router)
+app.include_router(employees_router)
+app.include_router(permissions_router)
+app.include_router(roles_router)
 
 print("Starting FastAPI backend with CORS configuration")
