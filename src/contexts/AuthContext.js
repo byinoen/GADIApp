@@ -6,6 +6,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [permissions, setPermissions] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -16,6 +17,7 @@ export function AuthProvider({ children }) {
     if (storedAuth && storedAuth.access_token && storedAuth.user) {
       setUser(storedAuth.user);
       setToken(storedAuth.access_token);
+      setPermissions(storedAuth.permissions || []);
       setCurrentUser({
         nombre: storedAuth.user.nombre || storedAuth.user.name || storedAuth.user.email,
         role: storedAuth.user.role,
@@ -32,6 +34,7 @@ export function AuthProvider({ children }) {
       if (response.user && response.access_token) {
         setUser(response.user);
         setToken(response.access_token);
+        setPermissions(response.permissions || []);
         setCurrentUser({
           nombre: response.user.nombre || response.user.name || response.user.email,
           role: response.user.role,
@@ -52,14 +55,16 @@ export function AuthProvider({ children }) {
     apiLogout(); // Clears localStorage
     setUser(null);
     setToken(null);
+    setPermissions([]);
     setCurrentUser(null);
     setIsAuthenticated(false);
   };
 
   // Legacy login method for backward compatibility
-  const login = (userData, userToken) => {
+  const login = (userData, userToken, userPermissions = []) => {
     setUser(userData);
     setToken(userToken);
+    setPermissions(userPermissions);
     setCurrentUser({
       nombre: userData.nombre || userData.name || userData.email,
       role: userData.role,
@@ -70,7 +75,8 @@ export function AuthProvider({ children }) {
     // Persist to localStorage in new format
     const authData = {
       access_token: userToken,
-      user: userData
+      user: userData,
+      permissions: userPermissions
     };
     localStorage.setItem('auth', JSON.stringify(authData));
   };
@@ -78,15 +84,42 @@ export function AuthProvider({ children }) {
   // Legacy logout method for backward compatibility
   const logout = signOut;
 
+  // Permission checking helper functions
+  const hasPermission = (permission) => {
+    return permissions.includes(permission);
+  };
+
+  const hasAnyPermission = (permissionList) => {
+    return permissionList.some(permission => permissions.includes(permission));
+  };
+
+  const isAdmin = () => {
+    return user?.role === 'admin';
+  };
+
+  const isEncargado = () => {
+    return user?.role === 'encargado';
+  };
+
+  const isTrabajador = () => {
+    return user?.role === 'trabajador';
+  };
+
   const value = {
     user,
     token,
+    permissions,
     currentUser,
     isAuthenticated,
     signIn,
     signOut,
     login, // Keep for backward compatibility
-    logout // Keep for backward compatibility
+    logout, // Keep for backward compatibility
+    hasPermission,
+    hasAnyPermission,
+    isAdmin,
+    isEncargado,
+    isTrabajador
   };
 
   return (

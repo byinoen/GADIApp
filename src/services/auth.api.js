@@ -15,17 +15,19 @@ export async function login(email, password) {
   // Handle both new JWT format and legacy token format
   const accessToken = response.access_token || response.token;
   const user = response.user;
+  const permissions = response.permissions || [];
 
   if (accessToken && user) {
     // Store auth data in localStorage
     const authData = {
       access_token: accessToken,
-      user: user
+      user: user,
+      permissions: permissions
     };
     localStorage.setItem('auth', JSON.stringify(authData));
   }
 
-  return { access_token: accessToken, user: user };
+  return { access_token: accessToken, user: user, permissions: permissions };
 }
 
 /**
