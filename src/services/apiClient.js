@@ -68,3 +68,44 @@ export async function request(path, options = {}) {
     throw error;
   }
 }
+
+// Helper function for API requests
+export const apiRequest = (path, method = 'GET', data = null) => {
+  const options = {
+    method,
+    headers: {
+      'x-demo-token': 'demo'
+    }
+  };
+
+  if (data && (method === 'POST' || method === 'PUT')) {
+    options.body = JSON.stringify(data);
+    options.headers['Content-Type'] = 'application/json';
+  }
+
+  return request(path, options);
+};
+
+// Employees API
+export const employeesApi = {
+  getAll: () => apiRequest('/employees'),
+  create: (employeeData) => apiRequest('/employees', 'POST', employeeData),
+  update: (id, employeeData) => apiRequest(`/employees/${id}`, 'PUT', employeeData),
+  delete: (id) => apiRequest(`/employees/${id}`, 'DELETE')
+};
+
+// Permissions API
+export const permissionsApi = {
+  getAll: () => apiRequest('/permissions'),
+  getCategories: () => apiRequest('/permissions/categories'),
+  getCurrentUserPermissions: () => apiRequest('/auth/me/permissions')
+};
+
+// Roles API
+export const rolesApi = {
+  getAll: () => apiRequest('/roles'),
+  getPermissions: (roleId) => apiRequest(`/roles/${roleId}/permissions`),
+  updatePermissions: (roleId, permissions) => apiRequest(`/roles/${roleId}/permissions`, 'PUT', { permissions }),
+  create: (roleData) => apiRequest('/roles', 'POST', roleData),
+  delete: (roleId) => apiRequest(`/roles/${roleId}`, 'DELETE')
+};

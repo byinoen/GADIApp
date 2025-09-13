@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Header
+from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 import calendar
@@ -10,6 +10,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from io import BytesIO
 import base64
+from typing import Optional, List, Dict, Any
 
 health_router = APIRouter()
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
@@ -17,6 +18,8 @@ schedules_router = APIRouter(prefix="/schedules", tags=["schedules"])
 tasks_router = APIRouter(prefix="/tasks", tags=["tasks"])
 inbox_router = APIRouter(prefix="/inbox", tags=["inbox"])
 registers_router = APIRouter(prefix="/registers", tags=["registers"])
+permissions_router = APIRouter(prefix="/permissions", tags=["permissions"])
+roles_router = APIRouter(prefix="/roles", tags=["roles"])
 
 # In-memory storage for schedules
 schedules_db = [
@@ -156,6 +159,113 @@ procedures_db = [
 # In-memory storage for register entries (signed completions)
 register_entries_db = []
 
+# Permission system
+permissions_db = [
+    # Schedule Management
+    {"id": "schedules.view", "name": "Ver Horarios", "description": "Puede ver los horarios de trabajo", "category": "schedules"},
+    {"id": "schedules.create", "name": "Crear Horarios", "description": "Puede crear nuevos horarios", "category": "schedules"},
+    {"id": "schedules.edit", "name": "Editar Horarios", "description": "Puede modificar horarios existentes", "category": "schedules"},
+    {"id": "schedules.delete", "name": "Eliminar Horarios", "description": "Puede eliminar horarios", "category": "schedules"},
+    
+    # Task Management
+    {"id": "tasks.view", "name": "Ver Tareas", "description": "Puede ver las tareas asignadas", "category": "tasks"},
+    {"id": "tasks.view_all", "name": "Ver Todas las Tareas", "description": "Puede ver tareas de todos los empleados", "category": "tasks"},
+    {"id": "tasks.create", "name": "Crear Tareas", "description": "Puede crear nuevas tareas", "category": "tasks"},
+    {"id": "tasks.edit", "name": "Editar Tareas", "description": "Puede modificar tareas", "category": "tasks"},
+    {"id": "tasks.delete", "name": "Eliminar Tareas", "description": "Puede eliminar tareas", "category": "tasks"},
+    {"id": "tasks.assign", "name": "Asignar Tareas", "description": "Puede asignar tareas a empleados", "category": "tasks"},
+    
+    # Employee Management
+    {"id": "employees.view", "name": "Ver Empleados", "description": "Puede ver la lista de empleados", "category": "employees"},
+    {"id": "employees.create", "name": "Crear Empleados", "description": "Puede crear nuevos empleados", "category": "employees"},
+    {"id": "employees.edit", "name": "Editar Empleados", "description": "Puede modificar información de empleados", "category": "employees"},
+    {"id": "employees.deactivate", "name": "Desactivar Empleados", "description": "Puede desactivar empleados", "category": "employees"},
+    
+    # Register Management
+    {"id": "registers.view", "name": "Ver Registros", "description": "Puede ver los registros", "category": "registers"},
+    {"id": "registers.create", "name": "Crear Registros", "description": "Puede crear nuevos registros", "category": "registers"},
+    {"id": "registers.edit", "name": "Editar Registros", "description": "Puede modificar registros", "category": "registers"},
+    {"id": "registers.delete", "name": "Eliminar Registros", "description": "Puede eliminar registros", "category": "registers"},
+    {"id": "registers.fill", "name": "Llenar Registros", "description": "Puede completar entradas de registros", "category": "registers"},
+    
+    # System Administration
+    {"id": "system.manage_roles", "name": "Gestionar Roles", "description": "Puede crear y modificar roles", "category": "system"},
+    {"id": "system.manage_permissions", "name": "Gestionar Permisos", "description": "Puede asignar permisos a roles", "category": "system"},
+    {"id": "system.view_reports", "name": "Ver Reportes", "description": "Puede acceder a reportes del sistema", "category": "system"},
+    {"id": "system.export_data", "name": "Exportar Datos", "description": "Puede exportar datos en PDF y otros formatos", "category": "system"},
+]
+
+# Role-Permission mappings
+role_permissions_db = {
+    "admin": [
+        # Full system access
+        "schedules.view", "schedules.create", "schedules.edit", "schedules.delete",
+        "tasks.view", "tasks.view_all", "tasks.create", "tasks.edit", "tasks.delete", "tasks.assign",
+        "employees.view", "employees.create", "employees.edit", "employees.deactivate",
+        "registers.view", "registers.create", "registers.edit", "registers.delete", "registers.fill",
+        "system.manage_roles", "system.manage_permissions", "system.view_reports", "system.export_data"
+    ],
+    "encargado": [
+        # Management level access
+        "schedules.view", "schedules.create", "schedules.edit",
+        "tasks.view", "tasks.view_all", "tasks.create", "tasks.edit", "tasks.assign",
+        "employees.view", "employees.create", "employees.edit",
+        "registers.view", "registers.create", "registers.edit", "registers.fill",
+        "system.view_reports", "system.export_data"
+    ],
+    "trabajador": [
+        # Basic worker access
+        "schedules.view",
+        "tasks.view", "tasks.edit",  # Only edit their own tasks
+        "registers.view", "registers.fill"
+    ]
+}
+
+# Current user context (stored after login)
+current_user_context = {}
+
+# Permission checking utilities
+def get_user_from_token(x_demo_token: Optional[str] = Header(None)) -> Dict[str, Any]:
+    """Extract user information from token"""
+    if not x_demo_token:
+        raise HTTPException(status_code=401, detail="Authentication token required")
+    
+    # For demo purposes, we'll extract user from the stored context
+    # In production, this would validate JWT and extract user info
+    user = current_user_context.get("user")
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid token or session expired")
+    
+    return user
+
+def has_permission(user: Dict[str, Any], permission: str) -> bool:
+    """Check if user has a specific permission"""
+    user_role = user.get("role", "")
+    role_permissions = role_permissions_db.get(user_role, [])
+    return permission in role_permissions
+
+def require_permission(permission: str):
+    """Dependency to require a specific permission"""
+    def permission_checker(user: Dict[str, Any] = Depends(get_user_from_token)):
+        if not has_permission(user, permission):
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Insufficient permissions. Required: {permission}"
+            )
+        return user
+    return permission_checker
+
+def require_any_permission(permissions: List[str]):
+    """Dependency to require any of the specified permissions"""
+    def permission_checker(user: Dict[str, Any] = Depends(get_user_from_token)):
+        if not any(has_permission(user, perm) for perm in permissions):
+            raise HTTPException(
+                status_code=403, 
+                detail=f"Insufficient permissions. Required one of: {', '.join(permissions)}"
+            )
+        return user
+    return permission_checker
+
 @health_router.get("/health")
 async def health_check():
     return {"status": "ok"}
@@ -164,7 +274,7 @@ async def health_check():
 employees_router = APIRouter(prefix="/employees", tags=["employees"])
 
 @employees_router.get("")
-async def get_employees(x_demo_token: str = Header(None)):
+async def get_employees(user: Dict[str, Any] = Depends(require_permission("employees.view"))):
     """Get all employees"""
     # Update empleados_map for backward compatibility
     global empleados_map
@@ -173,7 +283,7 @@ async def get_employees(x_demo_token: str = Header(None)):
     return {"employees": empleados_db}
 
 @employees_router.get("/{employee_id}")
-async def get_employee(employee_id: int, x_demo_token: str = Header(None)):
+async def get_employee(employee_id: int, user: Dict[str, Any] = Depends(require_permission("employees.view"))):
     """Get specific employee"""
     employee = next((emp for emp in empleados_db if emp["id"] == employee_id), None)
     if not employee:
@@ -182,7 +292,7 @@ async def get_employee(employee_id: int, x_demo_token: str = Header(None)):
     return {"employee": employee}
 
 @employees_router.post("")
-async def create_employee(employee_data: dict, x_demo_token: str = Header(None)):
+async def create_employee(employee_data: dict, user: Dict[str, Any] = Depends(require_permission("employees.create"))):
     """Create a new employee"""
     # Generate new ID
     new_id = max([emp["id"] for emp in empleados_db], default=0) + 1
@@ -210,7 +320,7 @@ async def create_employee(employee_data: dict, x_demo_token: str = Header(None))
     return {"message": "Employee created", "employee": new_employee}
 
 @employees_router.put("/{employee_id}")
-async def update_employee(employee_id: int, employee_data: dict, x_demo_token: str = Header(None)):
+async def update_employee(employee_id: int, employee_data: dict, user: Dict[str, Any] = Depends(require_permission("employees.edit"))):
     """Update employee information"""
     employee = next((emp for emp in empleados_db if emp["id"] == employee_id), None)
     if not employee:
@@ -230,7 +340,7 @@ async def update_employee(employee_id: int, employee_data: dict, x_demo_token: s
     return {"message": "Employee updated", "employee": employee}
 
 @employees_router.delete("/{employee_id}")
-async def delete_employee(employee_id: int, x_demo_token: str = Header(None)):
+async def delete_employee(employee_id: int, user: Dict[str, Any] = Depends(require_permission("employees.deactivate"))):
     """Delete/deactivate employee"""
     employee = next((emp for emp in empleados_db if emp["id"] == employee_id), None)
     if not employee:
@@ -257,32 +367,47 @@ async def login_user(request: dict):
         "trabajador@example.com": {"id": 3, "email": "trabajador@example.com", "role": "trabajador", "nombre": "Trabajador"}
     }
     
+    user_data = None
+    
     # First check hardcoded users
     if email in hardcoded_users and password == "1234":
-        return {"access_token": "demo", "user": hardcoded_users[email]}
+        user_data = hardcoded_users[email]
+    else:
+        # Then check dynamic employees from database
+        for employee in empleados_db:
+            if employee["email"] == email and employee.get("password", "1234") == password and employee["activo"]:
+                user_data = {
+                    "id": employee["id"],
+                    "email": employee["email"],
+                    "role": employee["role"],
+                    "nombre": employee["nombre"]
+                }
+                break
     
-    # Then check dynamic employees from database
-    for employee in empleados_db:
-        if employee["email"] == email and employee.get("password", "1234") == password and employee["activo"]:
-            user_data = {
-                "id": employee["id"],
-                "email": employee["email"],
-                "role": employee["role"],
-                "nombre": employee["nombre"]
-            }
-            return {"access_token": "demo", "user": user_data}
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # No match found
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+    # Store user context for permission checking
+    global current_user_context
+    current_user_context = {"user": user_data}
+    
+    # Add user permissions to response
+    user_permissions = role_permissions_db.get(user_data["role"], [])
+    
+    return {
+        "access_token": "demo", 
+        "user": user_data,
+        "permissions": user_permissions
+    }
 
 @schedules_router.get("")
-async def get_schedules(x_demo_token: str = Header(None)):
+async def get_schedules(user: Dict[str, Any] = Depends(require_permission("schedules.view"))):
     # Return all schedules sorted by date, then by shift
     sorted_schedules = sorted(schedules_db, key=lambda x: (x["fecha"], x["turno"]))
     return {"schedules": sorted_schedules}
 
 @schedules_router.post("")
-async def create_schedule(schedule: dict, x_demo_token: str = Header(None)):
+async def create_schedule(schedule: dict, user: Dict[str, Any] = Depends(require_permission("schedules.create"))):
     # Generate new ID
     new_id = max([s["id"] for s in schedules_db], default=0) + 1
     
@@ -304,14 +429,25 @@ async def create_schedule(schedule: dict, x_demo_token: str = Header(None)):
     return {"message": "Schedule created", "schedule": new_schedule}
 
 @tasks_router.get("")
-async def get_tasks(empleado_id: int = None, x_demo_token: str = Header(None)):
+async def get_tasks(empleado_id: int = None, user: Dict[str, Any] = Depends(require_any_permission(["tasks.view", "tasks.view_all"]))):
     # Generate any pending recurring tasks first
     generate_recurring_tasks()
     
+    # Check if user can see all tasks or only their own
+    can_view_all = has_permission(user, "tasks.view_all")
+    
     # If empleado_id is provided, filter tasks for that employee
     if empleado_id:
+        # Check if user can view this employee's tasks
+        if not can_view_all and user.get("id") != empleado_id:
+            raise HTTPException(status_code=403, detail="Can only view your own tasks")
         filtered_tasks = [task for task in tasks_db if task["empleado_id"] == empleado_id]
         return {"tasks": sorted(filtered_tasks, key=lambda x: (x["fecha"], x["prioridad"]))}
+    
+    # If user can't view all tasks, only return their own
+    if not can_view_all:
+        user_tasks = [task for task in tasks_db if task["empleado_id"] == user.get("id")]
+        return {"tasks": sorted(user_tasks, key=lambda x: (x["fecha"], x["prioridad"]))}
     
     # Return all tasks sorted by date and priority
     sorted_tasks = sorted(tasks_db, key=lambda x: (x["fecha"], x["prioridad"]))
@@ -428,7 +564,7 @@ def generate_recurring_tasks():
             )
 
 @tasks_router.post("")
-async def create_task(task: dict, x_demo_token: str = Header(None)):
+async def create_task(task: dict, user: Dict[str, Any] = Depends(require_permission("tasks.create"))):
     # Generate recurring tasks first
     generate_recurring_tasks()
     
@@ -1160,5 +1296,129 @@ app.include_router(tasks_router)
 app.include_router(inbox_router)
 app.include_router(registers_router)
 app.include_router(employees_router)
+app.include_router(permissions_router)
+app.include_router(roles_router)
+
+# Permission Management Endpoints
+@permissions_router.get("")
+async def get_permissions(user: Dict[str, Any] = Depends(require_permission("system.manage_permissions"))):
+    """Get all available permissions"""
+    return {"permissions": permissions_db}
+
+@permissions_router.get("/categories")
+async def get_permission_categories(user: Dict[str, Any] = Depends(require_permission("system.manage_permissions"))):
+    """Get permission categories"""
+    categories = {}
+    for perm in permissions_db:
+        category = perm["category"]
+        if category not in categories:
+            categories[category] = []
+        categories[category].append(perm)
+    return {"categories": categories}
+
+# Role Management Endpoints
+@roles_router.get("")
+async def get_roles(user: Dict[str, Any] = Depends(require_permission("system.manage_roles"))):
+    """Get all roles"""
+    roles = []
+    for role_id, permissions in role_permissions_db.items():
+        role_info = {
+            "id": role_id,
+            "name": role_id.title(),
+            "permissions": permissions,
+            "is_system_role": role_id in ["admin", "encargado", "trabajador"]
+        }
+        roles.append(role_info)
+    return {"roles": roles}
+
+@roles_router.get("/{role_id}/permissions")
+async def get_role_permissions(role_id: str, user: Dict[str, Any] = Depends(require_permission("system.manage_permissions"))):
+    """Get permissions for a specific role"""
+    if role_id not in role_permissions_db:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    return {"role": role_id, "permissions": role_permissions_db[role_id]}
+
+@roles_router.put("/{role_id}/permissions")
+async def update_role_permissions(
+    role_id: str, 
+    permission_data: dict, 
+    user: Dict[str, Any] = Depends(require_permission("system.manage_permissions"))
+):
+    """Update permissions for a role"""
+    if role_id not in role_permissions_db:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    new_permissions = permission_data.get("permissions", [])
+    
+    # Validate permissions exist
+    valid_permissions = [perm["id"] for perm in permissions_db]
+    for perm in new_permissions:
+        if perm not in valid_permissions:
+            raise HTTPException(status_code=400, detail=f"Invalid permission: {perm}")
+    
+    # Update role permissions
+    role_permissions_db[role_id] = new_permissions
+    
+    return {"message": "Role permissions updated", "role": role_id, "permissions": new_permissions}
+
+@roles_router.post("")
+async def create_role(
+    role_data: dict, 
+    user: Dict[str, Any] = Depends(require_permission("system.manage_roles"))
+):
+    """Create a new role"""
+    role_id = role_data.get("id", "").lower().replace(" ", "_")
+    role_name = role_data.get("name", "")
+    permissions = role_data.get("permissions", [])
+    
+    if not role_id or not role_name:
+        raise HTTPException(status_code=400, detail="Role ID and name are required")
+    
+    if role_id in role_permissions_db:
+        raise HTTPException(status_code=400, detail="Role already exists")
+    
+    # Validate permissions
+    valid_permissions = [perm["id"] for perm in permissions_db]
+    for perm in permissions:
+        if perm not in valid_permissions:
+            raise HTTPException(status_code=400, detail=f"Invalid permission: {perm}")
+    
+    # Create role
+    role_permissions_db[role_id] = permissions
+    
+    return {"message": "Role created", "role": role_id, "permissions": permissions}
+
+@roles_router.delete("/{role_id}")
+async def delete_role(
+    role_id: str, 
+    user: Dict[str, Any] = Depends(require_permission("system.manage_roles"))
+):
+    """Delete a role (cannot delete system roles)"""
+    if role_id in ["admin", "encargado", "trabajador"]:
+        raise HTTPException(status_code=400, detail="Cannot delete system roles")
+    
+    if role_id not in role_permissions_db:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    # Check if any users have this role
+    users_with_role = [emp for emp in empleados_db if emp["role"] == role_id]
+    if users_with_role:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete role. {len(users_with_role)} users are assigned this role"
+        )
+    
+    # Delete role
+    del role_permissions_db[role_id]
+    
+    return {"message": "Role deleted", "role": role_id}
+
+# Get current user permissions
+@auth_router.get("/me/permissions")
+async def get_current_user_permissions(user: Dict[str, Any] = Depends(get_user_from_token)):
+    """Get current user's permissions"""
+    user_permissions = role_permissions_db.get(user.get("role", ""), [])
+    return {"user": user, "permissions": user_permissions}
 
 print("Starting FastAPI backend with CORS configuration")

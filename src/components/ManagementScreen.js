@@ -12,6 +12,7 @@ import {
   updateEmployee,
   deleteEmployee
 } from '../services/api';
+import { permissionsApi, rolesApi } from '../services/apiClient';
 import './ManagementScreen.css';
 
 function ManagementScreen() {
@@ -37,6 +38,9 @@ function ManagementScreen() {
   
   // Role management state
   const [showRoleManager, setShowRoleManager] = useState(false);
+  const [showPermissionManager, setShowPermissionManager] = useState(false);
+  const [permissions, setPermissions] = useState([]);
+  const [permissionCategories, setPermissionCategories] = useState({});
   const [availableRoles, setAvailableRoles] = useState([
     { value: 'trabajador', label: 'Trabajador', description: 'Acceso básico a tareas y horarios' },
     { value: 'encargado', label: 'Encargado', description: 'Gestión de empleados y asignación de tareas' },
@@ -77,8 +81,63 @@ function ManagementScreen() {
     if (isAdmin) {
       loadRegisters();
       loadEmployees();
+      loadPermissions();
+      loadRoles();
     }
   }, [token, isAdmin]);
+
+  // Load permissions data
+  const loadPermissions = async () => {
+    try {
+      const [permissionsResponse, categoriesResponse] = await Promise.all([
+        permissionsApi.getAll(),
+        permissionsApi.getCategories()
+      ]);
+      setPermissions(permissionsResponse.permissions || []);
+      setPermissionCategories(categoriesResponse.categories || {});
+    } catch (error) {
+      console.error('Error loading permissions:', error);
+    }
+  };
+
+  // Load roles and their permissions
+  const loadRoles = async () => {
+    try {
+      const response = await rolesApi.getAll();
+      const rolesData = response.roles || [];
+      
+      // Convert to available roles format
+      const formattedRoles = rolesData.map(role => ({
+        value: role.id,
+        label: role.name,
+        description: `${role.permissions?.length || 0} permisos asignados`,
+        permissions: role.permissions || [],
+        is_system_role: role.is_system_role
+      }));
+      
+      setAvailableRoles(formattedRoles);
+    } catch (error) {
+      console.error('Error loading roles:', error);
+    }
+  };
+
+  // Handle permission assignment to roles
+  const handleUpdateRolePermissions = async (roleId, permissions) => {
+    try {
+      setLoading(true);
+      await rolesApi.updatePermissions(roleId, permissions);
+      
+      // Reload roles to get updated data
+      await loadRoles();
+      
+      alert('Permisos del rol actualizados correctamente');
+    } catch (error) {
+      console.error('Error updating role permissions:', error);
+      alert('Error al actualizar permisos del rol: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadRegisters = async () => {
     setLoading(true);
@@ -687,6 +746,12 @@ function ManagementScreen() {
               >
                 🔧 Gestionar Roles
               </button>
+              <button 
+                className="permission-manager-button"
+                onClick={() => setShowPermissionManager(true)}
+              >
+                🔐 Gestionar Permisos
+              </button>
             </div>
           </div>
 
@@ -943,6 +1008,83 @@ function ManagementScreen() {
                   setShowRoleManager(false);
                   handleCancelRoleForm();
                 }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permission Manager Modal */}
+      {showPermissionManager && (
+        <div className="modal-overlay" onClick={() => setShowPermissionManager(false)}>
+          <div className="modal-content permission-manager-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>🔐 Gestión de Permisos</h2>
+            
+            <div className="permission-manager-content">
+              <p className="permission-manager-description">
+                Asigne permisos específicos a cada rol. Los permisos controlan qué acciones pueden realizar los usuarios en el sistema.
+              </p>
+
+              <div className="roles-permission-list">
+                {availableRoles.map((role) => (
+                  <div key={role.value} className="role-permission-section">
+                    <div className="role-permission-header">
+                      <h3>
+                        {role.label}
+                        {role.is_system_role && <span className="system-badge">Sistema</span>}
+                      </h3>
+                      <span className="permission-count">
+                        {role.permissions?.length || 0} permisos asignados
+                      </span>
+                    </div>
+
+                    <div className="permission-categories">
+                      {Object.entries(permissionCategories).map(([category, categoryPermissions]) => (
+                        <div key={category} className="permission-category">
+                          <h4 className="category-title">
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </h4>
+                          <div className="permission-checkboxes">
+                            {categoryPermissions.map((permission) => (
+                              <label key={permission.id} className="permission-checkbox">
+                                <input
+                                  type="checkbox"
+                                  checked={role.permissions?.includes(permission.id) || false}
+                                  onChange={(e) => {
+                                    const currentPermissions = role.permissions || [];
+                                    let newPermissions;
+                                    
+                                    if (e.target.checked) {
+                                      newPermissions = [...currentPermissions, permission.id];
+                                    } else {
+                                      newPermissions = currentPermissions.filter(p => p !== permission.id);
+                                    }
+                                    
+                                    handleUpdateRolePermissions(role.value, newPermissions);
+                                  }}
+                                  disabled={loading}
+                                />
+                                <span className="permission-label">
+                                  <strong>{permission.name}</strong>
+                                  <small>{permission.description}</small>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="cancel-button"
+                onClick={() => setShowPermissionManager(false)}
               >
                 Cerrar
               </button>
