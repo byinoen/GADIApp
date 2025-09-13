@@ -1,4 +1,4 @@
-import { request } from './apiClient.js';
+import { apiRequest } from './apiClient.js';
 
 /**
  * Get all schedules with optional parameters
@@ -20,7 +20,7 @@ export async function listSchedules(params = {}) {
     url += '?' + searchParams.toString();
   }
 
-  const response = await request(url);
+  const response = await apiRequest(url);
   return response.schedules || [];
 }
 
@@ -30,7 +30,7 @@ export async function listSchedules(params = {}) {
  * @returns {Promise} - Schedule data
  */
 export async function getSchedule(id) {
-  const response = await request(`/schedules/${id}`);
+  const response = await apiRequest(`/schedules/${id}`);
   return response.schedule;
 }
 
@@ -40,10 +40,7 @@ export async function getSchedule(id) {
  * @returns {Promise} - Created schedule
  */
 export async function createSchedule(dto) {
-  const response = await request('/schedules', {
-    method: 'POST',
-    body: JSON.stringify(dto)
-  });
+  const response = await apiRequest('/schedules', 'POST', dto);
   return response.schedule;
 }
 
@@ -54,10 +51,7 @@ export async function createSchedule(dto) {
  * @returns {Promise} - Updated schedule
  */
 export async function updateSchedule(id, dto) {
-  const response = await request(`/schedules/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(dto)
-  });
+  const response = await apiRequest(`/schedules/${id}`, 'PUT', dto);
   return response.schedule;
 }
 
@@ -67,8 +61,6 @@ export async function updateSchedule(id, dto) {
  * @returns {Promise} - Deletion confirmation
  */
 export async function deleteSchedule(id) {
-  const response = await request(`/schedules/${id}`, {
-    method: 'DELETE'
-  });
+  const response = await apiRequest(`/schedules/${id}`, 'DELETE');
   return response;
 }
