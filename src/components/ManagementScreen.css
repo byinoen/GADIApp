@@ -845,24 +845,343 @@
   max-width: 500px;
 }
 
-/* Mobile responsive for employees */
+/* User Management Styles */
+.users-management {
+  padding: 20px 0;
+}
+
+.section-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.role-manager-button {
+  background: #9b59b6;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.role-manager-button:hover {
+  background: #8e44ad;
+  transform: translateY(-1px);
+}
+
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.user-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-color: #667eea;
+}
+
+.user-card.inactive {
+  opacity: 0.6;
+  background: #f8f9fa;
+}
+
+.user-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.user-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2em;
+}
+
+.user-info {
+  margin-bottom: 15px;
+}
+
+.user-info p {
+  margin: 8px 0;
+  color: #6c757d;
+  font-size: 0.9em;
+}
+
+.user-status {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.user-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.edit-user-btn,
+.deactivate-user-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+.edit-user-btn {
+  background: #28a745;
+  color: white;
+}
+
+.edit-user-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.deactivate-user-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.deactivate-user-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.user-modal {
+  width: 90%;
+  max-width: 500px;
+}
+
+.input-help {
+  display: block;
+  color: #666;
+  font-size: 0.8em;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Role Manager Modal Styles */
+.role-manager-modal {
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.role-manager-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.role-form-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+}
+
+.role-form-section h3 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+}
+
+.role-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.role-form textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.role-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.roles-list-section h3 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+}
+
+.roles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.role-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.role-item.system-role {
+  border-color: #3498db;
+  background: #f8faff;
+}
+
+.role-item.custom-role {
+  border-color: #95a5a6;
+}
+
+.role-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.role-info {
+  flex: 1;
+}
+
+.role-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.system-badge {
+  background: #3498db;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7em;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.role-description {
+  color: #666;
+  font-size: 0.9em;
+  margin: 5px 0;
+}
+
+.users-count {
+  color: #888;
+  font-size: 0.8em;
+}
+
+.role-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-role-btn,
+.delete-role-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: all 0.2s ease;
+}
+
+.edit-role-btn {
+  background: #f39c12;
+  color: white;
+}
+
+.edit-role-btn:hover {
+  background: #e67e22;
+}
+
+.delete-role-btn {
+  background: #e74c3c;
+  color: white;
+}
+
+.delete-role-btn:hover {
+  background: #c0392b;
+}
+
+.delete-role-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+/* Mobile responsive for users and employees */
 @media (max-width: 768px) {
-  .employees-grid {
+  .employees-grid,
+  .users-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
   
-  .employee-header {
+  .employee-header,
+  .user-header {
     flex-direction: column;
     gap: 8px;
   }
   
-  .employee-actions {
+  .employee-actions,
+  .user-actions {
     flex-direction: column;
   }
   
   .edit-employee-btn,
-  .deactivate-employee-btn {
+  .deactivate-employee-btn,
+  .edit-user-btn,
+  .deactivate-user-btn {
     width: 100%;
+  }
+  
+  .role-manager-content {
+    gap: 20px;
+  }
+  
+  .role-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .role-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .section-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

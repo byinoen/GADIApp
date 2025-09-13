@@ -22,17 +22,28 @@ function ManagementScreen() {
   const [registerDetails, setRegisterDetails] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  // Employee management state
+  // User management state
   const [employees, setEmployees] = useState([]);
-  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
-  const [employeeForm, setEmployeeForm] = useState({
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userForm, setUserForm] = useState({
     nombre: '',
     email: '',
     role: 'trabajador',
     telefono: '',
-    activo: true
+    activo: true,
+    password: ''
   });
+  
+  // Role management state
+  const [showRoleManager, setShowRoleManager] = useState(false);
+  const [availableRoles, setAvailableRoles] = useState([
+    { value: 'trabajador', label: 'Trabajador', description: 'Acceso básico a tareas y horarios' },
+    { value: 'encargado', label: 'Encargado', description: 'Gestión de empleados y asignación de tareas' },
+    { value: 'admin', label: 'Administrador', description: 'Acceso completo al sistema' }
+  ]);
+  const [roleForm, setRoleForm] = useState({ value: '', label: '', description: '' });
+  const [editingRole, setEditingRole] = useState(null);
   
   // Register form state
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -362,63 +373,114 @@ function ManagementScreen() {
     }
   };
 
-  const handleCreateEmployee = async (e) => {
+  const handleCreateUser = async (e) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      if (editingEmployee) {
-        await updateEmployee(token, editingEmployee.id, employeeForm);
-        alert('Empleado actualizado exitosamente');
+      if (editingUser) {
+        await updateEmployee(token, editingUser.id, userForm);
+        alert('Usuario actualizado exitosamente');
       } else {
-        await createEmployee(token, employeeForm);
-        alert('Empleado creado exitosamente');
+        await createEmployee(token, userForm);
+        alert('Usuario creado exitosamente');
       }
       
-      setShowEmployeeForm(false);
-      setEditingEmployee(null);
-      setEmployeeForm({ nombre: '', email: '', role: 'trabajador', telefono: '', activo: true });
+      setShowUserForm(false);
+      setEditingUser(null);
+      setUserForm({ nombre: '', email: '', role: 'trabajador', telefono: '', activo: true, password: '' });
       await loadEmployees();
     } catch (error) {
-      console.error('Error saving employee:', error);
-      alert('Error al guardar empleado: ' + error.message);
+      console.error('Error saving user:', error);
+      alert('Error al guardar usuario: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEditEmployee = (employee) => {
-    setEditingEmployee(employee);
-    setEmployeeForm({
-      nombre: employee.nombre,
-      email: employee.email,
-      role: employee.role,
-      telefono: employee.telefono,
-      activo: employee.activo
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setUserForm({
+      nombre: user.nombre,
+      email: user.email,
+      role: user.role,
+      telefono: user.telefono,
+      activo: user.activo,
+      password: '' // Don't pre-fill password
     });
-    setShowEmployeeForm(true);
+    setShowUserForm(true);
   };
 
-  const handleCancelEmployeeForm = () => {
-    setShowEmployeeForm(false);
-    setEditingEmployee(null);
-    setEmployeeForm({ nombre: '', email: '', role: 'trabajador', telefono: '', activo: true });
-  };
 
-  const handleDeactivateEmployee = async (employee) => {
-    if (window.confirm(`¿Está seguro que desea desactivar al empleado ${employee.nombre}?`)) {
+  const handleDeactivateUser = async (user) => {
+    if (window.confirm(`¿Está seguro que desea desactivar al usuario ${user.nombre}?`)) {
       setLoading(true);
       try {
-        await deleteEmployee(token, employee.id);
-        alert('Empleado desactivado exitosamente');
+        await deleteEmployee(token, user.id);
+        alert('Usuario desactivado exitosamente');
         await loadEmployees();
       } catch (error) {
-        console.error('Error deactivating employee:', error);
-        alert('Error al desactivar empleado: ' + error.message);
+        console.error('Error deactivating user:', error);
+        alert('Error al desactivar usuario: ' + error.message);
       } finally {
         setLoading(false);
       }
     }
+  };
+
+  // Role management functions
+  const handleCancelUserForm = () => {
+    setShowUserForm(false);
+    setEditingUser(null);
+    setUserForm({ nombre: '', email: '', role: 'trabajador', telefono: '', activo: true, password: '' });
+  };
+
+  const handleAddRole = () => {
+    if (roleForm.value && roleForm.label) {
+      if (editingRole) {
+        setAvailableRoles(roles => roles.map(role => 
+          role.value === editingRole.value ? { ...roleForm } : role
+        ));
+        alert('Rol actualizado exitosamente');
+      } else {
+        if (availableRoles.find(role => role.value === roleForm.value)) {
+          alert('Ya existe un rol con ese valor');
+          return;
+        }
+        setAvailableRoles(roles => [...roles, { ...roleForm }]);
+        alert('Rol agregado exitosamente');
+      }
+      setRoleForm({ value: '', label: '', description: '' });
+      setEditingRole(null);
+    }
+  };
+
+  const handleEditRole = (role) => {
+    setEditingRole(role);
+    setRoleForm({ ...role });
+  };
+
+  const handleDeleteRole = (roleValue) => {
+    if (['trabajador', 'encargado', 'admin'].includes(roleValue)) {
+      alert('No se pueden eliminar los roles predeterminados del sistema');
+      return;
+    }
+    
+    const usersWithRole = employees.filter(emp => emp.role === roleValue);
+    if (usersWithRole.length > 0) {
+      alert(`No se puede eliminar el rol porque ${usersWithRole.length} usuario(s) lo tienen asignado`);
+      return;
+    }
+    
+    if (window.confirm(`¿Está seguro que desea eliminar el rol "${roleValue}"?`)) {
+      setAvailableRoles(roles => roles.filter(role => role.value !== roleValue));
+      alert('Rol eliminado exitosamente');
+    }
+  };
+
+  const handleCancelRoleForm = () => {
+    setRoleForm({ value: '', label: '', description: '' });
+    setEditingRole(null);
   };
 
   if (!isAdmin) {
@@ -453,10 +515,10 @@ function ManagementScreen() {
           📝 Procedimientos
         </button>
         <button
-          className={`tab-button ${activeTab === 'employees' ? 'active' : ''}`}
-          onClick={() => setActiveTab('employees')}
+          className={`tab-button ${activeTab === 'usuarios' ? 'active' : ''}`}
+          onClick={() => setActiveTab('usuarios')}
         >
-          👥 Empleados
+          👥 Usuarios
         </button>
       </div>
 
@@ -608,78 +670,89 @@ function ManagementScreen() {
         </div>
       )}
 
-      {activeTab === 'employees' && (
-        <div className="employees-management">
+      {activeTab === 'usuarios' && (
+        <div className="users-management">
           <div className="section-header">
-            <h2>Gestión de Empleados</h2>
-            <button 
-              className="add-button"
-              onClick={() => setShowEmployeeForm(true)}
-            >
-              ➕ Nuevo Empleado
-            </button>
+            <h2>Gestión de Usuarios</h2>
+            <div className="section-actions">
+              <button 
+                className="add-button"
+                onClick={() => setShowUserForm(true)}
+              >
+                ➕ Nuevo Usuario
+              </button>
+              <button 
+                className="role-manager-button"
+                onClick={() => setShowRoleManager(true)}
+              >
+                🔧 Gestionar Roles
+              </button>
+            </div>
           </div>
 
-          <div className="employees-grid">
-            {employees.map((employee) => (
-              <div key={employee.id} className="employee-card-container">
-                <div className={`employee-card ${!employee.activo ? 'inactive' : ''}`}>
-                  <div className="employee-header">
-                    <h3>{employee.nombre}</h3>
-                    <span className={`role-badge ${employee.role}`}>
-                      {employee.role === 'admin' ? 'Administrador' :
-                       employee.role === 'encargado' ? 'Encargado' : 'Trabajador'}
-                    </span>
+          <div className="users-grid">
+            {employees.map((user) => {
+              const roleInfo = availableRoles.find(r => r.value === user.role) || { label: user.role, description: '' };
+              return (
+                <div key={user.id} className="user-card-container">
+                  <div className={`user-card ${!user.activo ? 'inactive' : ''}`}>
+                    <div className="user-header">
+                      <h3>{user.nombre}</h3>
+                      <span className={`role-badge ${user.role}`} title={roleInfo.description}>
+                        {roleInfo.label}
+                      </span>
+                    </div>
+                    <div className="user-info">
+                      <p><strong>📧 Email:</strong> {user.email}</p>
+                      <p><strong>📞 Teléfono:</strong> {user.telefono || 'No especificado'}</p>
+                      <p><strong>📅 Registrado:</strong> {new Date(user.created_at).toLocaleDateString('es-ES')}</p>
+                      <p><strong>🔑 Rol:</strong> {roleInfo.description}</p>
+                    </div>
+                    <div className="user-status">
+                      <span className={`status-badge ${user.activo ? 'active' : 'inactive'}`}>
+                        {user.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="employee-info">
-                    <p><strong>📧 Email:</strong> {employee.email}</p>
-                    <p><strong>📞 Teléfono:</strong> {employee.telefono || 'No especificado'}</p>
-                    <p><strong>📅 Registrado:</strong> {new Date(employee.created_at).toLocaleDateString('es-ES')}</p>
-                  </div>
-                  <div className="employee-status">
-                    <span className={`status-badge ${employee.activo ? 'active' : 'inactive'}`}>
-                      {employee.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </div>
-                </div>
-                <div className="employee-actions">
-                  <button 
-                    className="edit-employee-btn"
-                    onClick={() => handleEditEmployee(employee)}
-                    title="Editar empleado"
-                  >
-                    ✏️ Editar
-                  </button>
-                  {employee.activo && (
+                  <div className="user-actions">
                     <button 
-                      className="deactivate-employee-btn"
-                      onClick={() => handleDeactivateEmployee(employee)}
-                      title="Desactivar empleado"
+                      className="edit-user-btn"
+                      onClick={() => handleEditUser(user)}
+                      title="Editar usuario"
                     >
-                      ❌ Desactivar
+                      ✏️ Editar
                     </button>
-                  )}
+                    {user.activo && (
+                      <button 
+                        className="deactivate-user-btn"
+                        onClick={() => handleDeactivateUser(user)}
+                        title="Desactivar usuario"
+                      >
+                        ❌ Desactivar
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Employee Form Modal */}
-      {showEmployeeForm && (
-        <div className="modal-overlay" onClick={handleCancelEmployeeForm}>
-          <div className="modal-content employee-modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{editingEmployee ? 'Editar Empleado' : 'Nuevo Empleado'}</h2>
+      {/* User Form Modal */}
+      {showUserForm && (
+        <div className="modal-overlay" onClick={handleCancelUserForm}>
+          <div className="modal-content user-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
             
-            <form onSubmit={handleCreateEmployee}>
+            <form onSubmit={handleCreateUser}>
               <div className="input-group">
                 <label className="input-label">Nombre Completo *</label>
                 <input
                   type="text"
                   className="text-input"
-                  value={employeeForm.nombre}
-                  onChange={(e) => setEmployeeForm({...employeeForm, nombre: e.target.value})}
+                  value={userForm.nombre}
+                  onChange={(e) => setUserForm({...userForm, nombre: e.target.value})}
                   required
                 />
               </div>
@@ -689,9 +762,21 @@ function ManagementScreen() {
                 <input
                   type="email"
                   className="text-input"
-                  value={employeeForm.email}
-                  onChange={(e) => setEmployeeForm({...employeeForm, email: e.target.value})}
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({...userForm, email: e.target.value})}
                   required
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label">Contraseña {editingUser ? '(dejar vacío para mantener actual)' : '*'}</label>
+                <input
+                  type="password"
+                  className="text-input"
+                  value={userForm.password}
+                  onChange={(e) => setUserForm({...userForm, password: e.target.value})}
+                  required={!editingUser}
+                  placeholder={editingUser ? 'Nueva contraseña (opcional)' : 'Contraseña'}
                 />
               </div>
 
@@ -699,13 +784,18 @@ function ManagementScreen() {
                 <label className="input-label">Rol</label>
                 <select
                   className="text-input"
-                  value={employeeForm.role}
-                  onChange={(e) => setEmployeeForm({...employeeForm, role: e.target.value})}
+                  value={userForm.role}
+                  onChange={(e) => setUserForm({...userForm, role: e.target.value})}
                 >
-                  <option value="trabajador">Trabajador</option>
-                  <option value="encargado">Encargado</option>
-                  <option value="admin">Administrador</option>
+                  {availableRoles.map(role => (
+                    <option key={role.value} value={role.value} title={role.description}>
+                      {role.label}
+                    </option>
+                  ))}
                 </select>
+                <small className="input-help">
+                  {availableRoles.find(r => r.value === userForm.role)?.description || ''}
+                </small>
               </div>
 
               <div className="input-group">
@@ -713,8 +803,8 @@ function ManagementScreen() {
                 <input
                   type="tel"
                   className="text-input"
-                  value={employeeForm.telefono}
-                  onChange={(e) => setEmployeeForm({...employeeForm, telefono: e.target.value})}
+                  value={userForm.telefono}
+                  onChange={(e) => setUserForm({...userForm, telefono: e.target.value})}
                   placeholder="+34 123 456 789"
                 />
               </div>
@@ -723,10 +813,10 @@ function ManagementScreen() {
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={employeeForm.activo}
-                    onChange={(e) => setEmployeeForm({...employeeForm, activo: e.target.checked})}
+                    checked={userForm.activo}
+                    onChange={(e) => setUserForm({...userForm, activo: e.target.checked})}
                   />
-                  Empleado activo
+                  Usuario activo
                 </label>
               </div>
 
@@ -734,7 +824,7 @@ function ManagementScreen() {
                 <button
                   type="button"
                   className="cancel-button"
-                  onClick={handleCancelEmployeeForm}
+                  onClick={handleCancelUserForm}
                 >
                   Cancelar
                 </button>
@@ -743,10 +833,120 @@ function ManagementScreen() {
                   className="save-button"
                   disabled={loading}
                 >
-                  {loading ? 'Guardando...' : (editingEmployee ? 'Actualizar Empleado' : 'Crear Empleado')}
+                  {loading ? 'Guardando...' : (editingUser ? 'Actualizar Usuario' : 'Crear Usuario')}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Role Manager Modal */}
+      {showRoleManager && (
+        <div className="modal-overlay" onClick={() => setShowRoleManager(false)}>
+          <div className="modal-content role-manager-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>🔧 Gestión de Roles</h2>
+            
+            <div className="role-manager-content">
+              <div className="role-form-section">
+                <h3>{editingRole ? 'Editar Rol' : 'Agregar Nuevo Rol'}</h3>
+                <div className="role-form">
+                  <div className="input-group">
+                    <label className="input-label">Valor del Rol *</label>
+                    <input
+                      type="text"
+                      className="text-input"
+                      value={roleForm.value}
+                      onChange={(e) => setRoleForm({...roleForm, value: e.target.value.toLowerCase().replace(/\s+/g, '_')})}
+                      placeholder="ej: supervisor"
+                      disabled={editingRole && ['trabajador', 'encargado', 'admin'].includes(editingRole.value)}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Nombre del Rol *</label>
+                    <input
+                      type="text"
+                      className="text-input"
+                      value={roleForm.label}
+                      onChange={(e) => setRoleForm({...roleForm, label: e.target.value})}
+                      placeholder="ej: Supervisor"
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Descripción</label>
+                    <textarea
+                      className="text-input"
+                      value={roleForm.description}
+                      onChange={(e) => setRoleForm({...roleForm, description: e.target.value})}
+                      placeholder="Describe los permisos y responsabilidades de este rol"
+                      rows="3"
+                    />
+                  </div>
+                  <div className="role-form-actions">
+                    <button type="button" className="cancel-button" onClick={handleCancelRoleForm}>
+                      Cancelar
+                    </button>
+                    <button type="button" className="save-button" onClick={handleAddRole}>
+                      {editingRole ? 'Actualizar' : 'Agregar'} Rol
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="roles-list-section">
+                <h3>Roles Existentes</h3>
+                <div className="roles-list">
+                  {availableRoles.map((role) => {
+                    const isSystemRole = ['trabajador', 'encargado', 'admin'].includes(role.value);
+                    const usersCount = employees.filter(emp => emp.role === role.value).length;
+                    
+                    return (
+                      <div key={role.value} className={`role-item ${isSystemRole ? 'system-role' : 'custom-role'}`}>
+                        <div className="role-info">
+                          <div className="role-header">
+                            <strong>{role.label}</strong>
+                            <span className={`role-badge ${role.value}`}>{role.value}</span>
+                            {isSystemRole && <span className="system-badge">Sistema</span>}
+                          </div>
+                          <p className="role-description">{role.description}</p>
+                          <small className="users-count">👥 {usersCount} usuario(s) con este rol</small>
+                        </div>
+                        <div className="role-actions">
+                          <button 
+                            className="edit-role-btn"
+                            onClick={() => handleEditRole(role)}
+                          >
+                            ✏️ Editar
+                          </button>
+                          {!isSystemRole && (
+                            <button 
+                              className="delete-role-btn"
+                              onClick={() => handleDeleteRole(role.value)}
+                              disabled={usersCount > 0}
+                              title={usersCount > 0 ? 'No se puede eliminar, hay usuarios asignados' : 'Eliminar rol'}
+                            >
+                              🗑️ Eliminar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button 
+                className="cancel-button"
+                onClick={() => {
+                  setShowRoleManager(false);
+                  handleCancelRoleForm();
+                }}
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
