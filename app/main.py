@@ -15,12 +15,14 @@ import base64
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 from app.database import get_db, engine
-from app.models import Base, Employee, Schedule, Task, Permission, Role, Register, Procedure, RegisterEntry, ManagerInboxNotification, RecurringTask
+from app.models import Base, Employee, Schedule, Task, Permission, Role, Register, Procedure, RegisterEntry, ManagerInboxNotification, RecurringTask, TaskDefinition, TaskAssignment
 
 health_router = APIRouter()
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 schedules_router = APIRouter(prefix="/schedules", tags=["schedules"])
 tasks_router = APIRouter(prefix="/tasks", tags=["tasks"])
+task_definitions_router = APIRouter(prefix="/task-definitions", tags=["task-definitions"])
+task_assignments_router = APIRouter(prefix="/task-assignments", tags=["task-assignments"])
 inbox_router = APIRouter(prefix="/inbox", tags=["inbox"])
 registers_router = APIRouter(prefix="/registers", tags=["registers"])
 permissions_router = APIRouter(prefix="/permissions", tags=["permissions"])
@@ -257,11 +259,13 @@ def has_permission(user: Dict[str, Any], permission: str, db: Session = None) ->
         
         # Query the role from database
         role = db.query(Role).filter(Role.id == user_role).first()
-        if not role:
-            return False
+        if role:
+            # Check if permission is in the role's permissions list
+            role_permissions = role.permissions or []
+            return permission in role_permissions
         
-        # Check if permission is in the role's permissions list
-        role_permissions = role.permissions or []
+        # Fallback to in-memory role_permissions_db if role not found in database
+        role_permissions = role_permissions_db.get(user_role, [])
         return permission in role_permissions
         
     finally:
@@ -1871,11 +1875,387 @@ async def get_current_user_permissions(user: Dict[str, Any] = Depends(get_user_f
     user_permissions = role_permissions_db.get(user.get("role", ""), [])
     return {"user": user, "permissions": user_permissions}
 
+# ============================================
+# TASK DEFINITIONS API ENDPOINTS
+# ============================================
+
+@task_definitions_router.get("")
+async def get_task_definitions(
+    active_only: bool = True,
+    user: Dict[str, Any] = Depends(require_permission("tasks.view")),
+    db: Session = Depends(get_db)
+):
+    """Get all task definitions"""
+    query = db.query(TaskDefinition)
+    if active_only:
+        query = query.filter(TaskDefinition.active == True)
+    
+    definitions = query.all()
+    
+    # Convert to dict format
+    result = []
+    for definition in definitions:
+        result.append({
+            "id": definition.id,
+            "titulo": definition.titulo,
+            "descripcion": definition.descripcion,
+            "prioridad": definition.prioridad,
+            "requires_signature": definition.requires_signature,
+            "register_id": definition.register_id,
+            "procedure_id": definition.procedure_id,
+            "default_duration_minutes": definition.default_duration_minutes,
+            "active": definition.active,
+            "is_recurring": definition.is_recurring,
+            "frequency": definition.frequency,
+            "recurrence_params": definition.recurrence_params,
+            "created_at": definition.created_at.isoformat() if definition.created_at else None
+        })
+    
+    return result
+
+@task_definitions_router.post("")
+async def create_task_definition(
+    definition: dict,
+    user: Dict[str, Any] = Depends(require_permission("tasks.create")),
+    db: Session = Depends(get_db)
+):
+    """Create a new task definition"""
+    # Create new task definition
+    new_definition = TaskDefinition(
+        titulo=definition["titulo"],
+        descripcion=definition.get("descripcion"),
+        prioridad=definition.get("prioridad", "media"),
+        requires_signature=definition.get("requires_signature", False),
+        register_id=definition.get("register_id"),
+        procedure_id=definition.get("procedure_id"),
+        default_duration_minutes=definition.get("default_duration_minutes"),
+        active=definition.get("active", True),
+        is_recurring=definition.get("is_recurring", False),
+        frequency=definition.get("frequency"),
+        recurrence_params=definition.get("recurrence_params", {})
+    )
+    
+    db.add(new_definition)
+    db.commit()
+    db.refresh(new_definition)
+    
+    return {
+        "id": new_definition.id,
+        "titulo": new_definition.titulo,
+        "descripcion": new_definition.descripcion,
+        "prioridad": new_definition.prioridad,
+        "active": new_definition.active,
+        "is_recurring": new_definition.is_recurring,
+        "frequency": new_definition.frequency,
+        "message": "Task definition created successfully"
+    }
+
+@task_definitions_router.get("/{definition_id}")
+async def get_task_definition(
+    definition_id: int,
+    user: Dict[str, Any] = Depends(require_permission("tasks.view")),
+    db: Session = Depends(get_db)
+):
+    """Get a specific task definition"""
+    definition = db.query(TaskDefinition).filter(TaskDefinition.id == definition_id).first()
+    if not definition:
+        raise HTTPException(status_code=404, detail="Task definition not found")
+    
+    return {
+        "id": definition.id,
+        "titulo": definition.titulo,
+        "descripcion": definition.descripcion,
+        "prioridad": definition.prioridad,
+        "requires_signature": definition.requires_signature,
+        "register_id": definition.register_id,
+        "procedure_id": definition.procedure_id,
+        "default_duration_minutes": definition.default_duration_minutes,
+        "active": definition.active,
+        "is_recurring": definition.is_recurring,
+        "frequency": definition.frequency,
+        "recurrence_params": definition.recurrence_params,
+        "created_at": definition.created_at.isoformat() if definition.created_at else None
+    }
+
+@task_definitions_router.patch("/{definition_id}")
+async def update_task_definition(
+    definition_id: int,
+    update_data: dict,
+    user: Dict[str, Any] = Depends(require_permission("tasks.create")),
+    db: Session = Depends(get_db)
+):
+    """Update a task definition"""
+    definition = db.query(TaskDefinition).filter(TaskDefinition.id == definition_id).first()
+    if not definition:
+        raise HTTPException(status_code=404, detail="Task definition not found")
+    
+    # Update fields
+    for field, value in update_data.items():
+        if hasattr(definition, field):
+            setattr(definition, field, value)
+    
+    db.commit()
+    db.refresh(definition)
+    
+    return {
+        "id": definition.id,
+        "titulo": definition.titulo,
+        "descripcion": definition.descripcion,
+        "prioridad": definition.prioridad,
+        "active": definition.active,
+        "message": "Task definition updated successfully"
+    }
+
+@task_definitions_router.delete("/{definition_id}")
+async def delete_task_definition(
+    definition_id: int,
+    user: Dict[str, Any] = Depends(require_permission("tasks.create")),
+    db: Session = Depends(get_db)
+):
+    """Delete a task definition (set as inactive)"""
+    definition = db.query(TaskDefinition).filter(TaskDefinition.id == definition_id).first()
+    if not definition:
+        raise HTTPException(status_code=404, detail="Task definition not found")
+    
+    # Set as inactive instead of deleting
+    definition.active = False
+    db.commit()
+    
+    return {"message": "Task definition deactivated successfully"}
+
+# ============================================
+# TASK ASSIGNMENTS API ENDPOINTS
+# ============================================
+
+@task_assignments_router.get("")
+async def get_task_assignments(
+    empleado_id: int = None,
+    fecha: str = None,
+    schedule_id: int = None,
+    user: Dict[str, Any] = Depends(require_any_permission(["tasks.view", "tasks.view_all"])),
+    db: Session = Depends(get_db)
+):
+    """Get task assignments with filtering"""
+    # Check if user can see all assignments or only their own
+    can_view_all = has_permission(user, "tasks.view_all")
+    
+    # Build base query
+    query = db.query(TaskAssignment).join(TaskDefinition).join(Employee).filter(Employee.activo == True)
+    
+    # Apply filters
+    if empleado_id:
+        query = query.filter(TaskAssignment.empleado_id == empleado_id)
+    elif not can_view_all:
+        # Workers can only see their own assignments
+        query = query.filter(TaskAssignment.empleado_id == user["id"])
+    
+    if fecha:
+        query = query.filter(TaskAssignment.fecha == fecha)
+    
+    if schedule_id:
+        query = query.filter(TaskAssignment.schedule_id == schedule_id)
+    
+    assignments = query.all()
+    
+    # Convert to dict format
+    result = []
+    for assignment in assignments:
+        result.append({
+            "id": assignment.id,
+            "task_definition_id": assignment.task_definition_id,
+            "titulo": assignment.task_definition.titulo,
+            "descripcion": assignment.task_definition.descripcion,
+            "empleado_id": assignment.empleado_id,
+            "empleado": assignment.employee.nombre,
+            "fecha": assignment.fecha,
+            "schedule_id": assignment.schedule_id,
+            "estado": assignment.estado,
+            "prioridad": assignment.priority_override or assignment.task_definition.prioridad,
+            "planned_start": assignment.planned_start.isoformat() if assignment.planned_start else None,
+            "planned_duration_minutes": assignment.planned_duration_minutes or assignment.task_definition.default_duration_minutes,
+            "actual_duration_minutes": assignment.actual_duration_minutes,
+            "start_time": assignment.start_time.isoformat() if assignment.start_time else None,
+            "notes": assignment.notes,
+            "created_at": assignment.created_at.isoformat() if assignment.created_at else None
+        })
+    
+    return result
+
+@task_assignments_router.post("")
+async def create_task_assignment(
+    assignment: dict,
+    user: Dict[str, Any] = Depends(require_permission("tasks.create")),
+    db: Session = Depends(get_db)
+):
+    """Create a new task assignment"""
+    # Validate task definition exists and is active
+    task_definition = db.query(TaskDefinition).filter(
+        TaskDefinition.id == assignment["task_definition_id"],
+        TaskDefinition.active == True
+    ).first()
+    if not task_definition:
+        raise HTTPException(status_code=404, detail="Task definition not found or inactive")
+    
+    # Validate employee exists and is active
+    employee = db.query(Employee).filter(
+        Employee.id == assignment["empleado_id"],
+        Employee.activo == True
+    ).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    # Check for duplicate assignment (same task definition, employee, date)
+    existing = db.query(TaskAssignment).filter(
+        TaskAssignment.task_definition_id == assignment["task_definition_id"],
+        TaskAssignment.empleado_id == assignment["empleado_id"],
+        TaskAssignment.fecha == assignment["fecha"]
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Task already assigned to this employee on this date")
+    
+    # Create new task assignment
+    new_assignment = TaskAssignment(
+        task_definition_id=assignment["task_definition_id"],
+        empleado_id=assignment["empleado_id"],
+        fecha=assignment["fecha"],
+        schedule_id=assignment.get("schedule_id"),
+        estado="pendiente",
+        priority_override=assignment.get("priority_override"),
+        planned_start=assignment.get("planned_start"),
+        planned_duration_minutes=assignment.get("planned_duration_minutes"),
+        notes=assignment.get("notes"),
+        created_by=user["id"]
+    )
+    
+    db.add(new_assignment)
+    db.commit()
+    db.refresh(new_assignment)
+    
+    return {
+        "id": new_assignment.id,
+        "task_definition_id": new_assignment.task_definition_id,
+        "titulo": task_definition.titulo,
+        "empleado_id": new_assignment.empleado_id,
+        "empleado": employee.nombre,
+        "fecha": new_assignment.fecha,
+        "estado": new_assignment.estado,
+        "message": "Task assigned successfully"
+    }
+
+@task_assignments_router.get("/{assignment_id}")
+async def get_task_assignment(
+    assignment_id: int,
+    user: Dict[str, Any] = Depends(require_any_permission(["tasks.view", "tasks.view_all"])),
+    db: Session = Depends(get_db)
+):
+    """Get a specific task assignment"""
+    assignment = db.query(TaskAssignment).filter(TaskAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Task assignment not found")
+    
+    # Check if user can view this assignment
+    can_view_all = has_permission(user, "tasks.view_all")
+    if not can_view_all and assignment.empleado_id != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view this assignment")
+    
+    return {
+        "id": assignment.id,
+        "task_definition_id": assignment.task_definition_id,
+        "titulo": assignment.task_definition.titulo,
+        "descripcion": assignment.task_definition.descripcion,
+        "empleado_id": assignment.empleado_id,
+        "empleado": assignment.employee.nombre,
+        "fecha": assignment.fecha,
+        "schedule_id": assignment.schedule_id,
+        "estado": assignment.estado,
+        "prioridad": assignment.priority_override or assignment.task_definition.prioridad,
+        "planned_start": assignment.planned_start.isoformat() if assignment.planned_start else None,
+        "planned_duration_minutes": assignment.planned_duration_minutes or assignment.task_definition.default_duration_minutes,
+        "actual_duration_minutes": assignment.actual_duration_minutes,
+        "start_time": assignment.start_time.isoformat() if assignment.start_time else None,
+        "notes": assignment.notes,
+        "created_at": assignment.created_at.isoformat() if assignment.created_at else None
+    }
+
+@task_assignments_router.patch("/{assignment_id}")
+async def update_task_assignment(
+    assignment_id: int,
+    update_data: dict,
+    user: Dict[str, Any] = Depends(get_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """Update a task assignment (status, notes, timing)"""
+    assignment = db.query(TaskAssignment).filter(TaskAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Task assignment not found")
+    
+    # Check permissions: assignee can update status/timing, managers can update everything
+    can_manage = has_permission(user, "tasks.create")
+    is_assignee = assignment.empleado_id == user["id"]
+    
+    if not can_manage and not is_assignee:
+        raise HTTPException(status_code=403, detail="Not authorized to update this assignment")
+    
+    # Restrict what workers can update
+    allowed_worker_fields = {"estado", "actual_duration_minutes", "start_time", "notes"}
+    if not can_manage and not all(field in allowed_worker_fields for field in update_data.keys()):
+        raise HTTPException(status_code=403, detail="Workers can only update status, timing, and notes")
+    
+    # Update fields
+    for field, value in update_data.items():
+        if hasattr(assignment, field):
+            # Convert datetime strings for timing fields
+            if field in ["start_time", "planned_start"] and value and isinstance(value, str):
+                from datetime import datetime
+                try:
+                    value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                except ValueError:
+                    raise HTTPException(status_code=400, detail=f"Invalid datetime format for {field}")
+            
+            setattr(assignment, field, value)
+    
+    try:
+        db.commit()
+        db.refresh(assignment)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update assignment")
+    
+    return {
+        "id": assignment.id,
+        "estado": assignment.estado,
+        "actual_duration_minutes": assignment.actual_duration_minutes,
+        "notes": assignment.notes,
+        "message": "Assignment updated successfully"
+    }
+
+@task_assignments_router.delete("/{assignment_id}")
+async def delete_task_assignment(
+    assignment_id: int,
+    user: Dict[str, Any] = Depends(require_permission("tasks.create")),
+    db: Session = Depends(get_db)
+):
+    """Delete a task assignment (only managers can do this)"""
+    assignment = db.query(TaskAssignment).filter(TaskAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Task assignment not found")
+    
+    try:
+        db.delete(assignment)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete assignment")
+    
+    return {"message": "Task assignment deleted successfully"}
+
 # Include routers (after all endpoints are defined)
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(schedules_router)
 app.include_router(tasks_router)
+app.include_router(task_definitions_router)
+app.include_router(task_assignments_router)
 app.include_router(inbox_router)
 app.include_router(registers_router)
 app.include_router(employees_router)

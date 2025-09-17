@@ -1,7 +1,7 @@
 """
 Database models for GADIApp
 """
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -173,8 +173,11 @@ class TaskAssignment(Base):
     # Relationships
     task_definition = relationship("TaskDefinition", back_populates="assignments")
     employee = relationship("Employee", foreign_keys=[empleado_id], overlaps="task_assignments")
-    schedule = relationship("Schedule")
+    schedule = relationship("Schedule", back_populates="task_assignments")
     created_by_employee = relationship("Employee", foreign_keys=[created_by])
+    
+    # Unique constraint to prevent duplicate assignments
+    __table_args__ = (UniqueConstraint('task_definition_id', 'empleado_id', 'fecha', name='unique_task_assignment'),)
 
 class RecurringTask(Base):
     __tablename__ = "recurring_tasks"
