@@ -359,9 +359,19 @@ async def create_employee(employee_data: dict, user: Dict[str, Any] = Depends(re
     )
     
     # Add to database
-    db.add(new_employee)
-    db.commit()
-    db.refresh(new_employee)
+    try:
+        db.add(new_employee)
+        db.commit()
+        db.refresh(new_employee)
+    except Exception as e:
+        db.rollback()
+        # Handle database constraint violations
+        if "duplicate key" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Error creating employee: duplicate key constraint")
+        elif "unique constraint" in str(e).lower():
+            raise HTTPException(status_code=400, detail="Error creating employee: email or ID already exists") 
+        else:
+            raise HTTPException(status_code=500, detail=f"Error creating employee: {str(e)}")
     
     # Convert to dict format for response
     employee_dict = {
