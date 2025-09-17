@@ -5,7 +5,10 @@ import { listEmployees } from '../services/employees.api.js';
 import { useAuth } from '../contexts/AuthContext';
 import './WorkSchedulesScreen.css';
 
+console.log('WorkSchedulesScreen component file loaded');
+
 export default function WorkSchedulesScreen() {
+  console.log('WorkSchedulesScreen component rendering');
   const [schedules, setSchedules] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [tasks, setTasks] = useState([]);
