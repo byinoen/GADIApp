@@ -13,8 +13,10 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 
 ### Backend
 - **Framework**: FastAPI with Python 3.11
-- **API**: REST endpoints with role-based authentication
+- **Database**: PostgreSQL with SQLAlchemy ORM for persistent data storage
+- **API**: REST endpoints with database-backed role-based authentication
 - **CORS**: Configured for cross-origin requests
+- **Data**: All operations persist across application restarts
 - **Development**: Auto-reload with uvicorn
 
 ## Development Setup
@@ -22,7 +24,16 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 - **Backend Server**: FastAPI/uvicorn server on port 8000
 - **Host Configuration**: Both servers bound to 0.0.0.0 for Replit compatibility
 
-## Recent Changes (September 8, 2025)
+## Recent Changes (September 17, 2025)
+- **CRITICAL**: Successfully resolved data persistence issue by migrating from in-memory storage to PostgreSQL database
+- Implemented comprehensive database integration with SQLAlchemy ORM for all data operations
+- All employee, schedule, task, role, and permission operations now use persistent database storage
+- Authentication system fully migrated to database-backed user management
+- Role-based access control now operates from database-stored permissions
+- Data integrity guaranteed across application restarts and deployments
+- Maintained full backward compatibility with existing frontend interfaces
+
+## Previous Changes (September 8, 2025)
 - **MAJOR**: Converted from React Native/Expo to pure React web application
 - Restructured codebase to /src with components, services, contexts folders
 - Created App.js entry point with authentication flow
