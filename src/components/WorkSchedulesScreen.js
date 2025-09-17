@@ -191,8 +191,12 @@ export default function WorkSchedulesScreen() {
   const canCreateSchedules = hasRole('Encargado', 'Administrador');
 
   useEffect(() => {
+    console.log('useEffect triggered, token:', token);
     if (token) {
+      console.log('Token exists, calling loadData...');
       loadData();
+    } else {
+      console.log('No token available');
     }
   }, [token]);
 
