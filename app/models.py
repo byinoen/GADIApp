@@ -21,6 +21,7 @@ class Employee(Base):
     # Relationships
     schedules = relationship("Schedule", back_populates="employee")
     tasks = relationship("Task", back_populates="employee")
+    task_assignments = relationship("TaskAssignment", foreign_keys="TaskAssignment.empleado_id")
     register_entries = relationship("RegisterEntry", back_populates="employee")
 
 class Schedule(Base):
@@ -33,6 +34,7 @@ class Schedule(Base):
     
     # Relationships
     employee = relationship("Employee", back_populates="schedules")
+    task_assignments = relationship("TaskAssignment", back_populates="schedule")
 
 class Task(Base):
     __tablename__ = "tasks"
@@ -124,6 +126,55 @@ class ManagerInboxNotification(Base):
     status = Column(String, default="pending")
     data = Column(JSON, default=dict)  # Additional data for the notification
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class TaskDefinition(Base):
+    """Template for tasks that can be assigned to employees on specific dates"""
+    __tablename__ = "task_definitions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    titulo = Column(String, nullable=False)
+    descripcion = Column(Text, nullable=True)
+    prioridad = Column(String, default="media")  # Default priority
+    requires_signature = Column(Boolean, default=False)
+    register_id = Column(Integer, ForeignKey("registers.id"), nullable=True)
+    procedure_id = Column(Integer, ForeignKey("procedures.id"), nullable=True)
+    default_duration_minutes = Column(Integer, nullable=True)
+    active = Column(Boolean, default=True)
+    is_recurring = Column(Boolean, default=False)
+    frequency = Column(String, nullable=True)  # daily, weekly, monthly
+    recurrence_params = Column(JSON, default=dict)  # Additional recurrence settings
+    last_generated = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    register = relationship("Register")
+    procedure = relationship("Procedure")
+    assignments = relationship("TaskAssignment", back_populates="task_definition")
+
+class TaskAssignment(Base):
+    """Assignment of a task definition to a specific employee and date"""
+    __tablename__ = "task_assignments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    task_definition_id = Column(Integer, ForeignKey("task_definitions.id"), nullable=False)
+    empleado_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    fecha = Column(String, nullable=False)
+    schedule_id = Column(Integer, ForeignKey("schedules.id"), nullable=True)
+    estado = Column(String, default="pendiente")  # pendiente, en_progreso, completada
+    priority_override = Column(String, nullable=True)  # Override default priority
+    planned_start = Column(DateTime(timezone=True), nullable=True)
+    planned_duration_minutes = Column(Integer, nullable=True)
+    actual_duration_minutes = Column(Integer, nullable=True)
+    start_time = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_by = Column(Integer, ForeignKey("employees.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    task_definition = relationship("TaskDefinition", back_populates="assignments")
+    employee = relationship("Employee", foreign_keys=[empleado_id], overlaps="task_assignments")
+    schedule = relationship("Schedule")
+    created_by_employee = relationship("Employee", foreign_keys=[created_by])
 
 class RecurringTask(Base):
     __tablename__ = "recurring_tasks"
