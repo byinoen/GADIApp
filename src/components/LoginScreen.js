@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { login as apiLogin } from '../services/api';
+import { login as apiLogin } from '../services/auth.api.js';
 import { useAuth } from '../contexts/AuthContext';
 import './LoginScreen.css';
 
@@ -20,8 +20,8 @@ export default function LoginScreen() {
     try {
       const response = await apiLogin(email, password);
       
-      // Save token and user in context
-      login(response.user, response.token);
+      // Save token and user in context  
+      login(response.user, response.access_token, response.permissions);
       
       // Show success message - navigation will happen automatically
       alert('Sesión iniciada exitosamente');
