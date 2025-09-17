@@ -226,22 +226,21 @@ role_permissions_db = {
     ]
 }
 
-# Current user context (stored after login)
-current_user_context = {}
+# Session store for user contexts (in-memory for demo)
+session_store = {}
 
 # Permission checking utilities
-def get_user_from_token(x_demo_token: Optional[str] = Header(None)) -> Dict[str, Any]:
+def get_user_from_token(x_demo_token: Optional[str] = Header(None), db: Session = Depends(get_db)) -> Dict[str, Any]:
     """Extract user information from token"""
     if not x_demo_token:
         raise HTTPException(status_code=401, detail="Authentication token required")
     
-    # For demo purposes, we'll extract user from the stored context
-    # In production, this would validate JWT and extract user info
-    user = current_user_context.get("user")
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid token or session expired")
+    # Check if user session exists for this token
+    if x_demo_token in session_store:
+        return session_store[x_demo_token]
     
-    return user
+    # If no session, token is invalid or expired
+    raise HTTPException(status_code=401, detail="Invalid token or session expired. Please login again.")
 
 def has_permission(user: Dict[str, Any], permission: str, db: Session = None) -> bool:
     """Check if user has a specific permission"""
@@ -498,16 +497,21 @@ async def login_user(request: dict, db: Session = Depends(get_db)):
     if not user_data:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Store user context for permission checking
-    global current_user_context
-    current_user_context = {"user": user_data}
+    # User data is now stored above with the generated token
     
     # Get user permissions from database
     role = db.query(Role).filter(Role.id == user_data["role"]).first()
     user_permissions = role.permissions if role else []
     
+    # Generate unique token for this session
+    import uuid
+    token = str(uuid.uuid4())
+    
+    # Store user context in session store using unique token
+    session_store[token] = user_data
+    
     return {
-        "access_token": "demo", 
+        "access_token": token, 
         "user": user_data,
         "permissions": user_permissions
     }
