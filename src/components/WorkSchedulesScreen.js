@@ -55,6 +55,7 @@ export default function WorkSchedulesScreen() {
 
   const loadData = async () => {
     try {
+      console.log('loadData called - starting to load schedules...');
       setLoading(true);
       // Load schedules, employees, and tasks in parallel
       const [schedulesData, employeesData, tasksData] = await Promise.all([
@@ -63,6 +64,7 @@ export default function WorkSchedulesScreen() {
         listTasks()
       ]);
       
+      console.log('Schedules loaded:', schedulesData);
       setSchedules(schedulesData);
       setEmployees(employeesData);
       setTasks(tasksData);
@@ -102,8 +104,8 @@ export default function WorkSchedulesScreen() {
     setShowTasks(true);
     
     try {
-      const response = await getScheduleTasks(token, schedule.id);
-      setScheduleTasks(response.tasks);
+      const response = await getScheduleTasks(schedule.id);
+      setScheduleTasks(response);
     } catch (error) {
       alert('Error al cargar las tareas del horario');
       setShowTasks(false);
