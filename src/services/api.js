@@ -683,6 +683,232 @@ export async function updateRegisterEntry(token, entryId, entryData) {
   }
 }
 
+// NEW TASK MANAGEMENT API - Task Definitions and Assignments
+
+/**
+ * Get all task definitions (templates)
+ * @param {string} token - Authentication token
+ * @returns {Promise<Object>} JSON response with task definitions list
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function getTaskDefinitions(token) {
+  try {
+    const response = await fetch(`${BASE_URL}/task-definitions`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get task definitions: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get task definitions: ${error.message}`);
+  }
+}
+
+/**
+ * Create a new task definition (template)
+ * @param {string} token - Authentication token
+ * @param {Object} definitionData - Task definition data {titulo, descripcion, prioridad, is_recurring, frequency, register_id, procedure_id, requires_signature}
+ * @returns {Promise<Object>} JSON response with created task definition
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function createTaskDefinition(token, definitionData) {
+  try {
+    const response = await fetch(`${BASE_URL}/task-definitions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(definitionData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to create task definition: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to create task definition: ${error.message}`);
+  }
+}
+
+/**
+ * Update a task definition
+ * @param {string} token - Authentication token
+ * @param {number} definitionId - Task definition ID
+ * @param {Object} definitionData - Updated task definition data
+ * @returns {Promise<Object>} JSON response with updated task definition
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function updateTaskDefinition(token, definitionId, definitionData) {
+  try {
+    const response = await fetch(`${BASE_URL}/task-definitions/${definitionId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(definitionData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to update task definition: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to update task definition: ${error.message}`);
+  }
+}
+
+/**
+ * Delete a task definition
+ * @param {string} token - Authentication token
+ * @param {number} definitionId - Task definition ID
+ * @returns {Promise<Object>} JSON response with deletion result
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function deleteTaskDefinition(token, definitionId) {
+  try {
+    const response = await fetch(`${BASE_URL}/task-definitions/${definitionId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to delete task definition: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to delete task definition: ${error.message}`);
+  }
+}
+
+/**
+ * Get all task assignments with role-based filtering
+ * @param {string} token - Authentication token
+ * @returns {Promise<Object>} JSON response with task assignments list
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function getTaskAssignments(token) {
+  try {
+    const response = await fetch(`${BASE_URL}/task-assignments`, {
+      method: 'GET',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to get task assignments: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to get task assignments: ${error.message}`);
+  }
+}
+
+/**
+ * Create a new task assignment (assign definition to employee/date)
+ * @param {string} token - Authentication token
+ * @param {Object} assignmentData - Assignment data {task_definition_id, empleado_id, fecha}
+ * @returns {Promise<Object>} JSON response with created task assignment
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function createTaskAssignment(token, assignmentData) {
+  try {
+    const response = await fetch(`${BASE_URL}/task-assignments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(assignmentData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to create task assignment: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to create task assignment: ${error.message}`);
+  }
+}
+
+/**
+ * Update a task assignment status or timing
+ * @param {string} token - Authentication token
+ * @param {number} assignmentId - Task assignment ID
+ * @param {Object} assignmentData - Updated assignment data
+ * @returns {Promise<Object>} JSON response with updated task assignment
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function updateTaskAssignment(token, assignmentId, assignmentData) {
+  try {
+    const response = await fetch(`${BASE_URL}/task-assignments/${assignmentId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Demo-Token': token
+      },
+      body: JSON.stringify(assignmentData)
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to update task assignment: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to update task assignment: ${error.message}`);
+  }
+}
+
+/**
+ * Delete a task assignment
+ * @param {string} token - Authentication token
+ * @param {number} assignmentId - Task assignment ID
+ * @returns {Promise<Object>} JSON response with deletion result
+ * @throws {Error} If fetch fails or response is not ok
+ */
+export async function deleteTaskAssignment(token, assignmentId) {
+  try {
+    const response = await fetch(`${BASE_URL}/task-assignments/${assignmentId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Demo-Token': token
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Failed to delete task assignment: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Failed to delete task assignment: ${error.message}`);
+  }
+}
+
 // Task Timer API
 export async function getTaskDetails(token, taskId) {
   try {

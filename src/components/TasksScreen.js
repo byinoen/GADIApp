@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getTasks, createTask, updateTaskStatus, getRegisters, getRegister } from '../services/api';
-import { listEmployees } from '../services/employees.api';
-import TaskDetailModal from './TaskDetailModal';
+import { getTaskDefinitions, createTaskDefinition, updateTaskDefinition, deleteTaskDefinition, getRegisters, getRegister } from '../services/api';
+// Employee API no longer needed for template management
+// TaskDetailModal no longer needed for template management
 import './TasksScreen.css';
 
 function TasksScreen() {
-  const [tasks, setTasks] = useState([]);
+  const [taskDefinitions, setTaskDefinitions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingDefinition, setEditingDefinition] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
-    empleado_id: '1',
-    fecha: '',
     prioridad: 'media',
     is_recurring: false,
     frequency: 'weekly',
@@ -27,24 +26,15 @@ function TasksScreen() {
   const [registers, setRegisters] = useState([]);
   const [procedures, setProcedures] = useState([]);
   
-  // Employee data
-  const [employees, setEmployees] = useState([]);
-  
-  // Task detail modal
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [showTaskDetail, setShowTaskDetail] = useState(false);
+  // Definition detail modal (simplified for templates)
+  const [selectedDefinition, setSelectedDefinition] = useState(null);
+  const [showDefinitionDetail, setShowDefinitionDetail] = useState(false);
   const { token, user } = useAuth();
 
-  // Helper function to check if user is a worker (has limited access)
-  const isWorkerRole = () => {
-    return user?.role === 'trabajador' || user?.role === 'péon';
+  // Helper function to check if user can manage task definitions
+  const canManageDefinitions = () => {
+    return user?.role === 'admin' || user?.role === 'encargado';
   };
-
-  // Dynamic employee options loaded from API
-  const EMPLEADOS_OPTIONS = employees.map(emp => ({
-    id: emp.id,
-    name: emp.nombre
-  }));
 
   const PRIORIDAD_OPTIONS = ['baja', 'media', 'alta'];
   const ESTADO_OPTIONS = ['pendiente', 'en_progreso', 'completada'];
@@ -54,85 +44,87 @@ function TasksScreen() {
     { value: 'monthly', label: 'Mensual' }
   ];
 
-  const loadTasks = async () => {
+  const loadTaskDefinitions = async () => {
     try {
       setLoading(true);
-      // If user is a worker (trabajador/péon), filter by their employee ID, else show all tasks
-      const empleadoId = isWorkerRole() ? user?.id : null;
-      const response = await getTasks(token, empleadoId);
-      setTasks(response.tasks);
+      const response = await getTaskDefinitions(token);
+      setTaskDefinitions(response.task_definitions || []);
     } catch (error) {
-      alert('Error al cargar las tareas');
+      alert('Error al cargar las definiciones de tareas');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadEmployees = async () => {
-    try {
-      const employeeList = await listEmployees();
-      // Filter only active employees
-      const activeEmployees = employeeList.filter(emp => emp.activo !== false);
-      setEmployees(activeEmployees);
-      
-      // Set default employee to first active employee if form is still at default
-      if (activeEmployees.length > 0 && formData.empleado_id === '1') {
-        setFormData(prev => ({
-          ...prev,
-          empleado_id: activeEmployees[0].id.toString()
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading employees:', error);
-      // Set fallback to prevent task assignment from breaking
-      setEmployees([]);
-    }
-  };
+  // No longer needed - task definitions are independent of employees
 
   const handleRefresh = async () => {
     try {
-      const empleadoId = isWorkerRole() ? user?.id : null;
-      const response = await getTasks(token, empleadoId);
-      setTasks(response.tasks);
+      const response = await getTaskDefinitions(token);
+      setTaskDefinitions(response.task_definitions || []);
     } catch (error) {
-      alert('Error al cargar las tareas');
+      alert('Error al cargar las definiciones de tareas');
     }
   };
 
-  const handleTaskClick = (task) => {
-    setSelectedTask(task);
-    setShowTaskDetail(true);
+  const handleDefinitionClick = (definition) => {
+    setSelectedDefinition(definition);
+    setShowDefinitionDetail(true);
   };
 
-  const handleTaskUpdate = (updatedTask) => {
-    // Update the task in the tasks list
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === updatedTask.id ? updatedTask : task
-      )
-    );
+  const handleEditDefinition = (definition) => {
+    setEditingDefinition(definition);
+    setFormData({
+      titulo: definition.titulo,
+      descripcion: definition.descripcion,
+      prioridad: definition.prioridad,
+      is_recurring: definition.is_recurring,
+      frequency: definition.frequency || 'weekly',
+      register_id: definition.register_id || '',
+      procedure_id: definition.procedure_id || '',
+      requires_signature: definition.requires_signature || false
+    });
+    
+    // Load procedures if there's a register_id
+    if (definition.register_id) {
+      loadProcedures(definition.register_id);
+    }
+    
+    setShowForm(true);
   };
 
-  const handleCloseTaskDetail = () => {
-    setSelectedTask(null);
-    setShowTaskDetail(false);
+  const handleDeleteDefinition = async (definitionId) => {
+    if (!window.confirm('¿Está seguro de que desea eliminar esta definición de tarea?')) {
+      return;
+    }
+    
+    try {
+      await deleteTaskDefinition(token, definitionId);
+      alert('Definición de tarea eliminada exitosamente');
+      loadTaskDefinitions();
+    } catch (error) {
+      alert('Error al eliminar la definición de tarea: ' + error.message);
+    }
   };
 
-  const handleCreateTask = async (e) => {
+  const handleCloseDefinitionDetail = () => {
+    setSelectedDefinition(null);
+    setShowDefinitionDetail(false);
+  };
+
+  const handleSubmitDefinition = async (e) => {
     e.preventDefault();
     
-    if (!formData.titulo || !formData.fecha) {
-      alert('Por favor complete los campos obligatorios');
+    if (!formData.titulo) {
+      alert('Por favor complete el título de la tarea');
       return;
     }
 
     setSubmitting(true);
     try {
-      const taskData = {
+      const definitionData = {
         titulo: formData.titulo,
         descripcion: formData.descripcion,
-        empleado_id: parseInt(formData.empleado_id),
-        fecha: formData.fecha,
         prioridad: formData.prioridad,
         is_recurring: formData.is_recurring,
         frequency: formData.is_recurring ? formData.frequency : null,
@@ -141,55 +133,39 @@ function TasksScreen() {
         requires_signature: formData.requires_signature
       };
       
-      const response = await createTask(token, taskData);
-      
-      // Check if there's a scheduling conflict
-      if (response.error === 'scheduling_conflict') {
-        const conflictMessage = `⚠️ CONFLICTO DE HORARIO\n\n${response.message}\n\n${response.suggestion}\n\nSe ha enviado una notificación a su bandeja de entrada para resolver este conflicto.`;
-        alert(conflictMessage);
-        setShowForm(false);
-        setFormData({
-          titulo: '',
-          descripcion: '',
-          empleado_id: '1',
-          fecha: '',
-          prioridad: 'media',
-          is_recurring: false,
-          frequency: 'weekly'
-        });
-        return; // Don't reload tasks, conflict was created instead
+      if (editingDefinition) {
+        // Update existing definition
+        await updateTaskDefinition(token, editingDefinition.id, definitionData);
+        alert('Definición de tarea actualizada exitosamente');
+      } else {
+        // Create new definition
+        await createTaskDefinition(token, definitionData);
+        alert('Definición de tarea creada exitosamente');
       }
       
-      const message = formData.is_recurring ? 'Tarea recurrente creada exitosamente' : 'Tarea creada exitosamente';
-      alert(message);
       setShowForm(false);
+      setEditingDefinition(null);
       setFormData({
         titulo: '',
         descripcion: '',
-        empleado_id: '1',
-        fecha: '',
         prioridad: 'media',
         is_recurring: false,
-        frequency: 'weekly'
+        frequency: 'weekly',
+        register_id: '',
+        procedure_id: '',
+        requires_signature: false
       });
-      loadTasks(); // Refresh the list
+      loadTaskDefinitions(); // Refresh the list
     } catch (error) {
-      alert('Error al crear tarea: ' + error.message);
+      alert('Error al guardar la definición de tarea: ' + error.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleStatusChange = async (taskId, newStatus) => {
-    try {
-      await updateTaskStatus(token, taskId, newStatus);
-      loadTasks(); // Refresh the list
-    } catch (error) {
-      alert('Error al actualizar estado: ' + error.message);
-    }
-  };
+  // Status changes are now handled in WorkSchedulesScreen where tasks are assigned
 
-  const canCreateTasks = user?.role === 'admin' || user?.role === 'encargado';
+  const canCreateDefinitions = user?.role === 'admin' || user?.role === 'encargado';
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -220,9 +196,8 @@ function TasksScreen() {
   };
 
   useEffect(() => {
-    loadTasks();
+    loadTaskDefinitions();
     loadRegisters();
-    loadEmployees();
   }, [token, user]);
 
   const loadRegisters = async () => {
@@ -252,7 +227,7 @@ function TasksScreen() {
     return (
       <div className="tasks-container">
         <div className="loading-container">
-          <p>Cargando tareas...</p>
+          <p>Cargando definiciones de tareas...</p>
         </div>
       </div>
     );
@@ -263,20 +238,31 @@ function TasksScreen() {
       <div className="tasks-header">
         <div className="header-content">
           <div className="header-text">
-            <h1 className="tasks-title">Gestión de Tareas</h1>
+            <h1 className="tasks-title">Plantillas de Tareas</h1>
             <p className="tasks-subtitle">
-              {isWorkerRole()
-                ? 'Mis tareas asignadas' 
-                : 'Todas las tareas del equipo'}
+              Gestionar definiciones de tareas reutilizables
             </p>
           </div>
           
-          {canCreateTasks && (
+          {canCreateDefinitions && (
             <button
               className="add-button"
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                setEditingDefinition(null);
+                setFormData({
+                  titulo: '',
+                  descripcion: '',
+                  prioridad: 'media',
+                  is_recurring: false,
+                  frequency: 'weekly',
+                  register_id: '',
+                  procedure_id: '',
+                  requires_signature: false
+                });
+                setShowForm(true);
+              }}
             >
-              ➕ Nueva tarea
+              ➕ Nueva plantilla
             </button>
           )}
         </div>
@@ -287,86 +273,84 @@ function TasksScreen() {
       </div>
 
       <div className="tasks-content">
-        {tasks.length === 0 ? (
+        {taskDefinitions.length === 0 ? (
           <div className="empty-container">
-            <p className="empty-text">No hay tareas disponibles</p>
+            <p className="empty-text">No hay plantillas de tareas disponibles</p>
+            {canCreateDefinitions && (
+              <p className="empty-hint">Crea plantillas de tareas que luego podrás asignar a empleados en horarios específicos</p>
+            )}
           </div>
         ) : (
           <div className="tasks-grid">
-            {tasks.map((task) => (
+            {taskDefinitions.map((definition) => (
               <div 
-                key={task.id} 
+                key={definition.id} 
                 className="task-card task-clickable" 
-                onClick={() => handleTaskClick(task)}
+                onClick={() => handleDefinitionClick(definition)}
               >
                 <div className="task-header">
                   <div className="task-title-row">
                     <h3 className="task-title">
-                      {task.is_recurring && '🔄 '}{task.titulo}
+                      {definition.is_recurring && '🔄 '}{definition.titulo}
                     </h3>
                     <div className="task-badges">
-                      {task.is_recurring && (
+                      {definition.is_recurring && (
                         <span className="recurring-badge">
-                          {task.frequency === 'daily' && 'Diario'}
-                          {task.frequency === 'weekly' && 'Semanal'}
-                          {task.frequency === 'monthly' && 'Mensual'}
+                          {definition.frequency === 'daily' && 'Diario'}
+                          {definition.frequency === 'weekly' && 'Semanal'}
+                          {definition.frequency === 'monthly' && 'Mensual'}
                         </span>
                       )}
                       <span 
                         className="priority-badge" 
-                        style={{ backgroundColor: getPriorityColor(task.prioridad) }}
+                        style={{ backgroundColor: getPriorityColor(definition.prioridad) }}
                       >
-                        {task.prioridad}
+                        {definition.prioridad}
                       </span>
                     </div>
                   </div>
                   <div className="task-meta">
-                    <span className="task-date">{formatDate(task.fecha)}</span>
-                    <span className="task-employee">👤 {task.empleado}</span>
+                    <span className="task-template">📋 Plantilla de tarea</span>
+                    <span className="task-created">
+                      Creada: {new Date(definition.created_at).toLocaleDateString('es-ES')}
+                    </span>
                   </div>
                 </div>
                 
-                <p className="task-description">{task.descripcion}</p>
+                <p className="task-description">{definition.descripcion}</p>
                 
-                {(task.register_id || task.procedure_id) && (
+                {(definition.register_id || definition.procedure_id) && (
                   <div className="task-register-info">
-                    📋 Con procedimiento documentado {task.requires_signature && '✍️'}
-                  </div>
-                )}
-                
-                {task.estado === 'en_progreso' && task.start_time && (
-                  <div className="task-timer-info">
-                    ⏱️ En progreso desde {new Date(task.start_time).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}
+                    📋 Con procedimiento documentado {definition.requires_signature && '✍️'}
                   </div>
                 )}
                 
                 <div className="task-click-hint">
-                  👆 Haz clic para ver detalles y {task.estado === 'pendiente' ? 'iniciar' : task.estado === 'en_progreso' ? 'completar' : 'revisar'} la tarea
+                  👆 Haz clic para ver detalles de la plantilla
                 </div>
                 
-                <div className="task-footer">
-                  <span 
-                    className="status-badge" 
-                    style={{ backgroundColor: getStatusColor(task.estado) }}
-                  >
-                    {task.estado.replace('_', ' ')}
-                  </span>
-                  
-                  {(canCreateTasks || user?.id === task.empleado_id) && (
-                    <div className="status-buttons">
-                      {ESTADO_OPTIONS.map((estado) => (
-                        <button
-                          key={estado}
-                          className={`status-btn ${task.estado === estado ? 'active' : ''}`}
-                          onClick={() => handleStatusChange(task.id, estado)}
-                          disabled={task.estado === estado}
-                        >
-                          {estado.replace('_', ' ')}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {canCreateDefinitions && (
+                  <div className="task-footer">
+                    <button 
+                      className="edit-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditDefinition(definition);
+                      }}
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button 
+                      className="delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteDefinition(definition.id);
+                      }}
+                    >
+                      🗑️ Eliminar
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -376,9 +360,11 @@ function TasksScreen() {
       {showForm && (
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">Nueva Tarea</h2>
+            <h2 className="modal-title">
+              {editingDefinition ? 'Editar Plantilla de Tarea' : 'Nueva Plantilla de Tarea'}
+            </h2>
             
-            <form onSubmit={handleCreateTask}>
+            <form onSubmit={handleSubmitDefinition}>
               <div className="input-group">
                 <label className="input-label">Título *</label>
                 <input
@@ -402,34 +388,6 @@ function TasksScreen() {
                 />
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Fecha *</label>
-                <input
-                  type="date"
-                  className="text-input"
-                  value={formData.fecha}
-                  onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-                  required
-                />
-              </div>
-
-              <div className="input-group">
-                <label className="input-label">Asignar a</label>
-                <div className="picker-container">
-                  {EMPLEADOS_OPTIONS.map((empleado) => (
-                    <button
-                      key={empleado.id}
-                      type="button"
-                      className={`picker-option ${
-                        formData.empleado_id === empleado.id.toString() ? 'picker-option-selected' : ''
-                      }`}
-                      onClick={() => setFormData({...formData, empleado_id: empleado.id.toString()})}
-                    >
-                      {empleado.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               <div className="input-group">
                 <label className="input-label">Prioridad</label>
@@ -551,7 +509,7 @@ function TasksScreen() {
                   className={`submit-button ${submitting ? 'submit-button-disabled' : ''}`}
                   disabled={submitting}
                 >
-                  {submitting ? 'Creando...' : 'Crear Tarea'}
+                  {submitting ? 'Guardando...' : (editingDefinition ? 'Actualizar Plantilla' : 'Crear Plantilla')}
                 </button>
               </div>
             </form>
@@ -559,13 +517,52 @@ function TasksScreen() {
         </div>
       )}
 
-      {/* Task Detail Modal */}
-      {showTaskDetail && selectedTask && (
-        <TaskDetailModal 
-          task={selectedTask}
-          onClose={handleCloseTaskDetail}
-          onTaskUpdate={handleTaskUpdate}
-        />
+      {/* Definition Detail Modal */}
+      {showDefinitionDetail && selectedDefinition && (
+        <div className="modal-overlay" onClick={handleCloseDefinitionDetail}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">Detalles de la Plantilla</h2>
+            
+            <div className="definition-details">
+              <h3>{selectedDefinition.titulo}</h3>
+              <p><strong>Descripción:</strong> {selectedDefinition.descripcion}</p>
+              <p><strong>Prioridad:</strong> {selectedDefinition.prioridad}</p>
+              
+              {selectedDefinition.is_recurring && (
+                <p><strong>Recurrencia:</strong> {selectedDefinition.frequency === 'daily' && 'Diario'}
+                {selectedDefinition.frequency === 'weekly' && 'Semanal'}
+                {selectedDefinition.frequency === 'monthly' && 'Mensual'}</p>
+              )}
+              
+              {selectedDefinition.register_id && (
+                <p><strong>Con procedimiento documentado</strong> {selectedDefinition.requires_signature && '(requiere firma)'}</p>
+              )}
+              
+              <p><strong>Creada:</strong> {new Date(selectedDefinition.created_at).toLocaleDateString('es-ES')}</p>
+            </div>
+            
+            <div className="modal-buttons">
+              <button
+                className="cancel-button"
+                onClick={handleCloseDefinitionDetail}
+              >
+                Cerrar
+              </button>
+              
+              {canCreateDefinitions && (
+                <button
+                  className="submit-button"
+                  onClick={() => {
+                    handleCloseDefinitionDetail();
+                    handleEditDefinition(selectedDefinition);
+                  }}
+                >
+                  Editar Plantilla
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
