@@ -1,14 +1,6 @@
 // Base API client with environment configuration
-// Use same origin for unified server (no port specified since everything runs on same port)
-const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined' && window.location) {
-    // Use same origin (protocol + hostname + port) since API and frontend are unified
-    return window.location.origin;
-  }
-  return 'http://localhost:5000';
-};
-
-export const BASE_URL = import.meta.env?.VITE_API_URL || process.env.REACT_APP_API_URL || getApiBaseUrl();
+// Use relative paths since API and frontend are served from the same origin
+export const BASE_URL = '';
 
 // Log the API base URL for debugging
 console.log('API Base URL:', BASE_URL);
