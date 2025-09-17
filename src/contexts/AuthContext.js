@@ -12,9 +12,12 @@ export function AuthProvider({ children }) {
 
   // Hydrate from localStorage on mount
   useEffect(() => {
+    console.log('AuthContext: Checking stored auth...');
     const storedAuth = getStoredAuth();
+    console.log('AuthContext: Stored auth data:', storedAuth);
     
     if (storedAuth && storedAuth.access_token && storedAuth.user) {
+      console.log('AuthContext: Restoring token:', storedAuth.access_token);
       setUser(storedAuth.user);
       setToken(storedAuth.access_token);
       setPermissions(storedAuth.permissions || []);
@@ -24,14 +27,18 @@ export function AuthProvider({ children }) {
         employee_id: storedAuth.user.id
       });
       setIsAuthenticated(true);
+    } else {
+      console.log('AuthContext: No valid stored auth found');
     }
   }, []);
 
   const signIn = async (email, password) => {
     try {
       const response = await apiLogin(email, password);
+      console.log('AuthContext: Login response:', response);
       
       if (response.user && response.access_token) {
+        console.log('AuthContext: Setting token:', response.access_token);
         setUser(response.user);
         setToken(response.access_token);
         setPermissions(response.permissions || []);
