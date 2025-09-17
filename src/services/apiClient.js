@@ -1,15 +1,14 @@
 // Base API client with environment configuration
-// Use Replit domain for API calls instead of localhost
-const getReplitDomain = () => {
+// Use same origin for unified server (no port specified since everything runs on same port)
+const getApiBaseUrl = () => {
   if (typeof window !== 'undefined' && window.location) {
-    const hostname = window.location.hostname;
-    // Convert frontend domain to backend domain (port 8000)
-    return `https://${hostname.replace(':5000', '')}:8000`;
+    // Use same origin (protocol + hostname + port) since API and frontend are unified
+    return window.location.origin;
   }
-  return 'http://localhost:8000';
+  return 'http://localhost:5000';
 };
 
-export const BASE_URL = import.meta.env?.VITE_API_URL || process.env.REACT_APP_API_URL || getReplitDomain();
+export const BASE_URL = import.meta.env?.VITE_API_URL || process.env.REACT_APP_API_URL || getApiBaseUrl();
 
 // Log the API base URL for debugging
 console.log('API Base URL:', BASE_URL);

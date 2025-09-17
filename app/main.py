@@ -1,5 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 from datetime import datetime, timedelta
 import calendar
 from reportlab.lib.pagesizes import letter
@@ -1420,5 +1422,14 @@ app.include_router(registers_router)
 app.include_router(employees_router)
 app.include_router(permissions_router)
 app.include_router(roles_router)
+
+# Serve React static files
+app.mount("/static", StaticFiles(directory="build/static"), name="static")
+
+# SPA fallback route - serve React app for all other routes
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    """Serve React SPA for all non-API routes"""
+    return FileResponse("build/index.html")
 
 print("Starting FastAPI backend with CORS configuration")
