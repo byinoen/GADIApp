@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getTasks, createTask, updateTaskStatus, getRegisters, getRegister } from '../services/api';
+import { listEmployees } from '../services/employees.api';
 import TaskDetailModal from './TaskDetailModal';
 import './TasksScreen.css';
 
@@ -26,18 +27,24 @@ function TasksScreen() {
   const [registers, setRegisters] = useState([]);
   const [procedures, setProcedures] = useState([]);
   
+  // Employee data
+  const [employees, setEmployees] = useState([]);
+  
   // Task detail modal
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
   const { token, user } = useAuth();
 
-  const EMPLEADOS_OPTIONS = [
-    { id: 1, name: 'Juan Pérez' },
-    { id: 2, name: 'María García' },
-    { id: 3, name: 'Carlos López' },
-    { id: 4, name: 'Ana Martínez' },
-    { id: 5, name: 'Pedro Sánchez' }
-  ];
+  // Helper function to check if user is a worker (has limited access)
+  const isWorkerRole = () => {
+    return user?.role === 'trabajador' || user?.role === 'péon';
+  };
+
+  // Dynamic employee options loaded from API
+  const EMPLEADOS_OPTIONS = employees.map(emp => ({
+    id: emp.id,
+    name: emp.nombre
+  }));
 
   const PRIORIDAD_OPTIONS = ['baja', 'media', 'alta'];
   const ESTADO_OPTIONS = ['pendiente', 'en_progreso', 'completada'];
@@ -50,8 +57,8 @@ function TasksScreen() {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      // If user is trabajador, filter by their employee ID, else show all tasks
-      const empleadoId = user?.role === 'trabajador' ? user?.id : null;
+      // If user is a worker (trabajador/péon), filter by their employee ID, else show all tasks
+      const empleadoId = isWorkerRole() ? user?.id : null;
       const response = await getTasks(token, empleadoId);
       setTasks(response.tasks);
     } catch (error) {
@@ -61,9 +68,30 @@ function TasksScreen() {
     }
   };
 
+  const loadEmployees = async () => {
+    try {
+      const employeeList = await listEmployees();
+      // Filter only active employees
+      const activeEmployees = employeeList.filter(emp => emp.activo !== false);
+      setEmployees(activeEmployees);
+      
+      // Set default employee to first active employee if form is still at default
+      if (activeEmployees.length > 0 && formData.empleado_id === '1') {
+        setFormData(prev => ({
+          ...prev,
+          empleado_id: activeEmployees[0].id.toString()
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      // Set fallback to prevent task assignment from breaking
+      setEmployees([]);
+    }
+  };
+
   const handleRefresh = async () => {
     try {
-      const empleadoId = user?.role === 'trabajador' ? user?.id : null;
+      const empleadoId = isWorkerRole() ? user?.id : null;
       const response = await getTasks(token, empleadoId);
       setTasks(response.tasks);
     } catch (error) {
@@ -194,6 +222,7 @@ function TasksScreen() {
   useEffect(() => {
     loadTasks();
     loadRegisters();
+    loadEmployees();
   }, [token, user]);
 
   const loadRegisters = async () => {
@@ -236,7 +265,7 @@ function TasksScreen() {
           <div className="header-text">
             <h1 className="tasks-title">Gestión de Tareas</h1>
             <p className="tasks-subtitle">
-              {user?.role === 'trabajador' 
+              {isWorkerRole()
                 ? 'Mis tareas asignadas' 
                 : 'Todas las tareas del equipo'}
             </p>

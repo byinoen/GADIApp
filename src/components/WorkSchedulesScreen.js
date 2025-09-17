@@ -31,6 +31,7 @@ export default function WorkSchedulesScreen() {
     // Map Spanish role names to backend role values
     const roleMapping = {
       'Trabajador': 'trabajador',
+      'Péon': 'péon',
       'Encargado': 'encargado', 
       'Administrador': 'admin'
     };
@@ -239,7 +240,7 @@ export default function WorkSchedulesScreen() {
       </div>
 
       {/* Read-only notice for Trabajador */}
-      {hasRole('Trabajador') && (
+      {(hasRole('Trabajador') || hasRole('Péon')) && (
         <div className="read-only-notice">
           <p style={{
             backgroundColor: '#f8f9fa',
