@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { listSchedules, createSchedule } from '../services/schedules.api.js';
+import { listSchedules, createSchedule, getScheduleTasks } from '../services/schedules.api.js';
 import { listTasks } from '../services/tasks.api.js';
 import { listEmployees } from '../services/employees.api.js';
-import { getScheduleTasks } from '../services/api'; // Keep this for tasks functionality
 import { useAuth } from '../contexts/AuthContext';
 import './WorkSchedulesScreen.css';
 

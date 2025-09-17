@@ -64,3 +64,13 @@ export async function deleteSchedule(id) {
   const response = await apiRequest(`/schedules/${id}`, 'DELETE');
   return response;
 }
+
+/**
+ * Get tasks for a specific schedule
+ * @param {string} scheduleId - Schedule ID 
+ * @returns {Promise} - List of tasks for the schedule
+ */
+export async function getScheduleTasks(scheduleId) {
+  const response = await apiRequest(`/schedules/${scheduleId}/tasks`);
+  return response.tasks || [];
+}
