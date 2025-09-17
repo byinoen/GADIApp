@@ -27,10 +27,10 @@ export async function request(path, options = {}) {
     }
   }
   
-  // Merge default headers with provided headers
+  // Use X-Demo-Token header for authentication (matches backend)
   const headers = {
     'Content-Type': 'application/json',
-    ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
+    ...(accessToken && { 'X-Demo-Token': accessToken }),
     ...options.headers
   };
 
@@ -63,17 +63,14 @@ export async function request(path, options = {}) {
 // Helper function for API requests
 export const apiRequest = (path, method = 'GET', data = null) => {
   const options = {
-    method,
-    headers: {
-      'x-demo-token': 'demo'
-    }
+    method
   };
 
   if (data && (method === 'POST' || method === 'PUT')) {
     options.body = JSON.stringify(data);
-    options.headers['Content-Type'] = 'application/json';
   }
 
+  // The request function will automatically add X-Demo-Token header from localStorage
   return request(path, options);
 };
 

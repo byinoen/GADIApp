@@ -5,10 +5,7 @@ import { listEmployees } from '../services/employees.api.js';
 import { useAuth } from '../contexts/AuthContext';
 import './WorkSchedulesScreen.css';
 
-console.log('WorkSchedulesScreen component file loaded');
-
 export default function WorkSchedulesScreen() {
-  console.log('WorkSchedulesScreen component rendering');
   const [schedules, setSchedules] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -58,7 +55,6 @@ export default function WorkSchedulesScreen() {
 
   const loadData = async () => {
     try {
-      console.log('loadData called - starting to load schedules...');
       setLoading(true);
       // Load schedules, employees, and tasks in parallel
       const [schedulesData, employeesData, tasksData] = await Promise.all([
@@ -67,7 +63,6 @@ export default function WorkSchedulesScreen() {
         listTasks()
       ]);
       
-      console.log('Schedules loaded:', schedulesData);
       setSchedules(schedulesData);
       setEmployees(employeesData);
       setTasks(tasksData);
@@ -191,12 +186,8 @@ export default function WorkSchedulesScreen() {
   const canCreateSchedules = hasRole('Encargado', 'Administrador');
 
   useEffect(() => {
-    console.log('useEffect triggered, token:', token);
     if (token) {
-      console.log('Token exists, calling loadData...');
       loadData();
-    } else {
-      console.log('No token available');
     }
   }, [token]);
 

@@ -12,14 +12,10 @@ export async function login(email, password) {
     body: JSON.stringify({ email, password })
   });
 
-  console.log('auth.api.js - Raw login response:', response);
-
   // Handle both new JWT format and legacy token format
   const accessToken = response.access_token || response.token;
   const user = response.user;
   const permissions = response.permissions || [];
-
-  console.log('auth.api.js - Extracted values:', { accessToken, user, permissions });
 
   if (accessToken && user) {
     // Store auth data in localStorage
@@ -28,10 +24,7 @@ export async function login(email, password) {
       user: user,
       permissions: permissions
     };
-    console.log('auth.api.js - Storing in localStorage:', authData);
     localStorage.setItem('auth', JSON.stringify(authData));
-  } else {
-    console.log('auth.api.js - NOT storing in localStorage because:', { accessToken, user });
   }
 
   return { access_token: accessToken, user: user, permissions: permissions };
