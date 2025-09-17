@@ -245,7 +245,7 @@ def get_user_from_token(x_demo_token: Optional[str] = Header(None)) -> Dict[str,
 
 def has_permission(user: Dict[str, Any], permission: str, db: Session = None) -> bool:
     """Check if user has a specific permission"""
-    if not db:
+    if db is None:
         # Create a new session if none provided
         from app.database import SessionLocal
         db = SessionLocal()
@@ -641,88 +641,135 @@ def calculate_next_date(current_date: str, frequency: str) -> str:
     
     return next_date.strftime("%Y-%m-%d")
 
-def is_employee_working(empleado_id: int, fecha: str) -> bool:
+def is_employee_working(empleado_id: int, fecha: str, db: Session = None) -> bool:
     """Check if employee is scheduled to work on a specific date"""
-    for schedule in schedules_db:
-        if schedule["empleado_id"] == empleado_id and schedule["fecha"] == fecha:
-            return True
-    return False
+    if db is None:
+        from app.database import SessionLocal
+        db = SessionLocal()
+        should_close = True
+    else:
+        should_close = False
+    
+    try:
+        schedule = db.query(Schedule).filter(
+            Schedule.empleado_id == empleado_id,
+            Schedule.fecha == fecha
+        ).first()
+        return schedule is not None
+    finally:
+        if should_close:
+            db.close()
 
-def create_conflict_notification(task_data: dict, conflict_type: str):
+def create_conflict_notification(task_data: dict, conflict_type: str, db: Session = None):
     """Create a conflict notification for managers"""
-    notification_id = max([notif["id"] for notif in manager_inbox_db], default=0) + 1
+    if db is None:
+        from app.database import SessionLocal
+        db = SessionLocal()
+        should_close = True
+    else:
+        should_close = False
     
-    empleado_name = empleados_map.get(task_data["empleado_id"], f"Empleado {task_data['empleado_id']}")
-    
-    notification = {
-        "id": notification_id,
-        "type": conflict_type,  # "assignment_conflict" or "recurring_conflict"
-        "task_data": task_data,
-        "empleado_id": task_data["empleado_id"],
-        "empleado_name": empleado_name,
-        "fecha": task_data["fecha"],
-        "message": f"No se puede asignar tarea '{task_data['titulo']}' a {empleado_name} el {task_data['fecha']} - no está programado para trabajar",
-        "status": "pending",  # pending, resolved
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "resolved_at": None,
-        "resolution": None
-    }
-    
-    manager_inbox_db.append(notification)
-    return notification
-
-def generate_recurring_tasks():
-    """Generate new instances of recurring tasks that are due"""
-    today = datetime.now().strftime("%Y-%m-%d")
-    
-    for recurring_task in recurring_tasks_db:
-        # Check if it's time to generate next instance
-        if recurring_task["next_generation_date"] <= today:
-            # Generate new task ID
-            new_id = max([t["id"] for t in tasks_db], default=0) + 1
-            
-            # Create new task instance
-            new_task = {
-                "id": new_id,
-                "titulo": recurring_task["titulo"],
-                "descripcion": recurring_task["descripcion"],
-                "empleado_id": recurring_task["empleado_id"],
-                "empleado": recurring_task["empleado"],
-                "fecha": recurring_task["next_generation_date"],
-                "estado": "pendiente",
-                "prioridad": recurring_task["prioridad"],
-                "is_recurring": False,  # This is an instance, not the template
-                "frequency": None,
-                "parent_task_id": recurring_task["id"]
-            }
-            
-            # Add to tasks database
-            tasks_db.append(new_task)
-            
-            # Update next generation date for recurring task
-            recurring_task["next_generation_date"] = calculate_next_date(
-                recurring_task["next_generation_date"], 
-                recurring_task["frequency"]
-            )
+    try:
+        # Get employee name
+        employee = db.query(Employee).filter(Employee.id == task_data["empleado_id"]).first()
+        empleado_name = employee.nombre if employee else f"Empleado {task_data['empleado_id']}"
         
-        # Check for conflicts in upcoming recurring task instances
-        elif not is_employee_working(recurring_task["empleado_id"], recurring_task["next_generation_date"]):
-            # Create conflict notification for recurring task
-            conflict_data = {
-                "titulo": recurring_task["titulo"],
-                "descripcion": recurring_task["descripcion"],
-                "empleado_id": recurring_task["empleado_id"],
-                "fecha": recurring_task["next_generation_date"],
-                "prioridad": recurring_task["prioridad"],
-                "frequency": recurring_task["frequency"]
+        # Create notification
+        notification = ManagerInboxNotification(
+            type=conflict_type,
+            title="Conflicto de Programación",
+            description=f"No se puede asignar tarea '{task_data['titulo']}' a {empleado_name} el {task_data['fecha']} - no está programado para trabajar",
+            status="pending",
+            data={
+                "task_data": task_data,
+                "empleado_id": task_data["empleado_id"],
+                "empleado_name": empleado_name,
+                "fecha": task_data["fecha"]
             }
-            create_conflict_notification(conflict_data, "recurring_conflict")
+        )
+        
+        db.add(notification)
+        db.commit()
+        db.refresh(notification)
+        
+        return {
+            "id": notification.id,
+            "type": notification.type,
+            "title": notification.title,
+            "description": notification.description,
+            "status": notification.status,
+            "data": notification.data,
+            "created_at": notification.created_at.isoformat() if notification.created_at else None
+        }
+    finally:
+        if should_close:
+            db.close()
+
+def generate_recurring_tasks(db: Session = None):
+    """Generate new instances of recurring tasks that are due"""
+    if db is None:
+        from app.database import SessionLocal
+        db = SessionLocal()
+        should_close = True
+    else:
+        should_close = False
+    
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        
+        # Get all active recurring tasks
+        recurring_tasks = db.query(RecurringTask).filter(RecurringTask.activo == True).all()
+        
+        for recurring_task in recurring_tasks:
+            # Calculate next generation date if not set
+            if recurring_task.last_generated is None:
+                last_generated_str = today
+            else:
+                last_generated_str = recurring_task.last_generated.strftime("%Y-%m-%d")
             
-            # Skip this instance and move to next date
-            recurring_task["next_generation_date"] = calculate_next_date(
-                recurring_task["next_generation_date"], 
-                recurring_task["frequency"]
-            )
+            next_generation_date = calculate_next_date(last_generated_str, str(recurring_task.frequency))
+            
+            # Check if it's time to generate next instance
+            if next_generation_date <= today:
+                # Check if employee is working on that date
+                if is_employee_working(int(recurring_task.empleado_id), next_generation_date, db):
+                    # Create new task instance
+                    new_task = Task(
+                        titulo=recurring_task.titulo,
+                        descripcion=recurring_task.descripcion,
+                        empleado_id=recurring_task.empleado_id,
+                        fecha=next_generation_date,
+                        estado="pendiente",
+                        prioridad=recurring_task.prioridad,
+                        is_recurring=False,
+                        frequency=None,
+                        parent_task_id=recurring_task.id
+                    )
+                    
+                    db.add(new_task)
+                    
+                    # Update last generated date for recurring task
+                    recurring_task.last_generated = datetime.now()
+                else:
+                    # Create conflict notification for recurring task
+                    conflict_data = {
+                        "titulo": recurring_task.titulo,
+                        "descripcion": recurring_task.descripcion,
+                        "empleado_id": recurring_task.empleado_id,
+                        "fecha": next_generation_date,
+                        "prioridad": recurring_task.prioridad,
+                        "frequency": recurring_task.frequency
+                    }
+                    create_conflict_notification(conflict_data, "recurring_conflict", db)
+                    
+                    # Update to next possible date
+                    recurring_task.last_generated = datetime.now()
+        
+        db.commit()
+        
+    finally:
+        if should_close:
+            db.close()
 
 @tasks_router.post("")
 async def create_task(task: dict, user: Dict[str, Any] = Depends(require_permission("tasks.create")), db: Session = Depends(get_db)):
@@ -979,132 +1026,180 @@ async def get_task_details(task_id: int, user: Dict[str, Any] = Depends(get_user
 
 # Manager Inbox Routes
 @inbox_router.get("")
-async def get_inbox_notifications(x_demo_token: str = Header(None)):
+async def get_inbox_notifications(x_demo_token: str = Header(None), db: Session = Depends(get_db)):
     """Get all pending conflict notifications for managers"""
-    # Sort by creation date, newest first
-    sorted_notifications = sorted(
-        [notif for notif in manager_inbox_db if notif["status"] == "pending"], 
-        key=lambda x: x["created_at"], 
-        reverse=True
-    )
-    return {"notifications": sorted_notifications}
+    # Get all pending notifications from database
+    notifications = db.query(ManagerInboxNotification).filter(
+        ManagerInboxNotification.status == "pending"
+    ).order_by(ManagerInboxNotification.created_at.desc()).all()
+    
+    # Convert to dict format
+    notifications_data = [{
+        "id": notif.id,
+        "type": notif.type,
+        "title": notif.title,
+        "description": notif.description,
+        "status": notif.status,
+        "data": notif.data,
+        "created_at": notif.created_at.isoformat() if notif.created_at else None
+    } for notif in notifications]
+    
+    return {"notifications": notifications_data}
 
 @inbox_router.post("/{notification_id}/reassign")
-async def reassign_task(notification_id: int, reassignment_data: dict, x_demo_token: str = Header(None)):
+async def reassign_task(notification_id: int, reassignment_data: dict, x_demo_token: str = Header(None), db: Session = Depends(get_db)):
     """Reassign a conflicted task to another employee"""
     # Find the notification
-    notification = None
-    for notif in manager_inbox_db:
-        if notif["id"] == notification_id:
-            notification = notif
-            break
+    notification = db.query(ManagerInboxNotification).filter(
+        ManagerInboxNotification.id == notification_id
+    ).first()
     
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     
     new_empleado_id = reassignment_data["new_empleado_id"]
-    new_empleado_name = empleados_map.get(new_empleado_id, f"Empleado {new_empleado_id}")
+    
+    # Get new employee name
+    new_employee = db.query(Employee).filter(Employee.id == new_empleado_id).first()
+    if not new_employee:
+        raise HTTPException(status_code=404, detail="New employee not found")
+    new_empleado_name = new_employee.nombre
+    
+    # Get task data from notification
+    task_data = notification.data.get("task_data", {})
+    fecha = notification.data.get("fecha", "")
     
     # Check if new employee is working on that date
-    if not is_employee_working(new_empleado_id, notification["fecha"]):
+    if not is_employee_working(new_empleado_id, fecha, db):
         return {
             "error": "reassignment_conflict",
-            "message": f"{new_empleado_name} tampoco está programado para trabajar el {notification['fecha']}"
+            "message": f"{new_empleado_name} tampoco está programado para trabajar el {fecha}"
         }
     
     # Create the task with new assignment
-    task_data = notification["task_data"].copy()
-    task_data["empleado_id"] = new_empleado_id
+    new_task = Task(
+        titulo=task_data.get("titulo", ""),
+        descripcion=task_data.get("descripcion", ""),
+        empleado_id=new_empleado_id,
+        fecha=fecha,
+        estado="pendiente",
+        prioridad=task_data.get("prioridad", "media"),
+        is_recurring=task_data.get("is_recurring", False),
+        frequency=task_data.get("frequency")
+    )
     
-    # Generate new task ID
-    new_id = max([t["id"] for t in tasks_db], default=0) + 1
-    
-    # Create reassigned task
-    new_task = {
-        "id": new_id,
-        "titulo": task_data["titulo"],
-        "descripcion": task_data.get("descripcion", ""),
-        "empleado_id": new_empleado_id,
-        "empleado": new_empleado_name,
-        "fecha": task_data["fecha"],
-        "estado": "pendiente",
-        "prioridad": task_data.get("prioridad", "media"),
-        "is_recurring": task_data.get("is_recurring", False),
-        "frequency": task_data.get("frequency", None),
-        "parent_task_id": None
-    }
-    
-    # Add to database
-    tasks_db.append(new_task)
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
     
     # Mark notification as resolved
-    notification["status"] = "resolved"
-    notification["resolved_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    notification["resolution"] = f"Tarea reasignada a {new_empleado_name}"
+    notification.status = "resolved"
+    notification.data = notification.data or {}
+    notification.data["resolution"] = f"Tarea reasignada a {new_empleado_name}"
+    notification.data["resolved_at"] = datetime.now().isoformat()
+    
+    db.commit()
+    db.refresh(notification)
+    
+    # Convert to dict format for response
+    task_dict = {
+        "id": new_task.id,
+        "titulo": new_task.titulo,
+        "descripcion": new_task.descripcion,
+        "empleado_id": new_task.empleado_id,
+        "empleado": new_empleado_name,
+        "fecha": new_task.fecha,
+        "estado": new_task.estado,
+        "prioridad": new_task.prioridad,
+        "is_recurring": new_task.is_recurring,
+        "frequency": new_task.frequency,
+        "parent_task_id": new_task.parent_task_id
+    }
     
     return {
         "message": f"Tarea reasignada exitosamente a {new_empleado_name}",
-        "task": new_task,
-        "notification": notification
+        "task": task_dict,
+        "notification": {
+            "id": notification.id,
+            "status": notification.status,
+            "data": notification.data
+        }
     }
 
 @inbox_router.post("/{notification_id}/reschedule")
-async def reschedule_task(notification_id: int, reschedule_data: dict, x_demo_token: str = Header(None)):
+async def reschedule_task(notification_id: int, reschedule_data: dict, x_demo_token: str = Header(None), db: Session = Depends(get_db)):
     """Reschedule a conflicted task to a different date"""
     # Find the notification
-    notification = None
-    for notif in manager_inbox_db:
-        if notif["id"] == notification_id:
-            notification = notif
-            break
+    notification = db.query(ManagerInboxNotification).filter(
+        ManagerInboxNotification.id == notification_id
+    ).first()
     
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     
     new_fecha = reschedule_data["new_fecha"]
-    empleado_id = notification["empleado_id"]
+    
+    # Get task data from notification
+    task_data = notification.data.get("task_data", {})
+    empleado_id = notification.data.get("empleado_id", 0)
+    empleado_name = notification.data.get("empleado_name", f"Empleado {empleado_id}")
     
     # Check if employee is working on the new date
-    if not is_employee_working(empleado_id, new_fecha):
+    if not is_employee_working(empleado_id, new_fecha, db):
         return {
             "error": "reschedule_conflict",
-            "message": f"{notification['empleado_name']} tampoco está programado para trabajar el {new_fecha}"
+            "message": f"{empleado_name} tampoco está programado para trabajar el {new_fecha}"
         }
     
-    # Create the task with new date
-    task_data = notification["task_data"].copy()
-    task_data["fecha"] = new_fecha
-    
-    # Generate new task ID
-    new_id = max([t["id"] for t in tasks_db], default=0) + 1
-    
     # Create rescheduled task
-    new_task = {
-        "id": new_id,
-        "titulo": task_data["titulo"],
-        "descripcion": task_data.get("descripcion", ""),
-        "empleado_id": empleado_id,
-        "empleado": notification["empleado_name"],
-        "fecha": new_fecha,
-        "estado": "pendiente",
-        "prioridad": task_data.get("prioridad", "media"),
-        "is_recurring": task_data.get("is_recurring", False),
-        "frequency": task_data.get("frequency", None),
-        "parent_task_id": None
-    }
+    new_task = Task(
+        titulo=task_data.get("titulo", ""),
+        descripcion=task_data.get("descripcion", ""),
+        empleado_id=empleado_id,
+        fecha=new_fecha,
+        estado="pendiente",
+        prioridad=task_data.get("prioridad", "media"),
+        is_recurring=task_data.get("is_recurring", False),
+        frequency=task_data.get("frequency")
+    )
     
     # Add to database
-    tasks_db.append(new_task)
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
     
     # Mark notification as resolved
-    notification["status"] = "resolved"
-    notification["resolved_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    notification["resolution"] = f"Tarea reprogramada para {new_fecha}"
+    notification.status = "resolved"
+    notification.data = notification.data or {}
+    notification.data["resolution"] = f"Tarea reprogramada para {new_fecha}"
+    notification.data["resolved_at"] = datetime.now().isoformat()
+    
+    db.commit()
+    db.refresh(notification)
+    
+    # Convert to dict format for response
+    task_dict = {
+        "id": new_task.id,
+        "titulo": new_task.titulo,
+        "descripcion": new_task.descripcion,
+        "empleado_id": new_task.empleado_id,
+        "empleado": empleado_name,
+        "fecha": new_task.fecha,
+        "estado": new_task.estado,
+        "prioridad": new_task.prioridad,
+        "is_recurring": new_task.is_recurring,
+        "frequency": new_task.frequency,
+        "parent_task_id": new_task.parent_task_id
+    }
     
     return {
         "message": f"Tarea reprogramada exitosamente para {new_fecha}",
-        "task": new_task,
-        "notification": notification
+        "task": task_dict,
+        "notification": {
+            "id": notification.id,
+            "status": notification.status,
+            "data": notification.data
+        }
     }
 
 # Enhanced schedule route to include tasks
@@ -1243,7 +1338,8 @@ async def create_register_entry(register_id: int, entry_data: dict, x_demo_token
     new_id = max([entry["id"] for entry in register_entries_db], default=0) + 1
     
     # Get employee name
-    empleado_name = empleados_map.get(entry_data["empleado_id"], f"Empleado {entry_data['empleado_id']}")
+    employee = db.query(Employee).filter(Employee.id == entry_data["empleado_id"]).first()
+    empleado_name = employee.nombre if employee else f"Empleado {entry_data['empleado_id']}"
     
     # Validate custom fields if provided
     custom_field_data = entry_data.get("campos_personalizados", {})
