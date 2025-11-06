@@ -1030,34 +1030,20 @@ async def get_task_details(task_id: int, user: Dict[str, Any] = Depends(get_user
         from app.models import Procedure, Register
         procedure = db.query(Procedure).filter(Procedure.id == task.procedure_id).first()
         if procedure:
-            # For now, return basic procedure info
-            # In a complete implementation, you would load the full procedure JSON with steps
+            # Build procedure data from database
             procedure_data = {
                 "id": procedure.id,
                 "nombre": procedure.titulo,
-                "descripcion": procedure.descripcion,
-                "tiempo_estimado": "30 minutos",  # Default value
-                "procedimiento": [
-                    "Preparar la mezcla según indicaciones",
-                    "Aplicar uniformemente sobre el cultivo",
-                    "Esperar el tiempo recomendado",
-                    "Verificar la aplicación completa"
-                ],
-                "precauciones": [
-                    "Usar equipo de protección adecuado",
-                    "Evitar contacto con ojos y piel",
-                    "Aplicar en horas de baja radiación solar"
-                ],
-                "receta": {
-                    "ingredientes": [
-                        {"nombre": "Jabón Potásico", "cantidad": "10ml/L"},
-                        {"nombre": "Aceite de Naranja", "cantidad": "5ml/L"}
-                    ],
-                    "materiales": [
-                        {"nombre": "Bomba de mochila", "cantidad": "1"}
-                    ]
-                }
+                "descripcion": procedure.descripcion
             }
+            
+            # Add contenido fields if available
+            if procedure.contenido:
+                contenido = procedure.contenido if isinstance(procedure.contenido, dict) else {}
+                procedure_data["tiempo_estimado"] = contenido.get("tiempo_estimado", "No especificado")
+                procedure_data["procedimiento"] = contenido.get("procedimiento", [])
+                procedure_data["precauciones"] = contenido.get("precauciones", [])
+                procedure_data["receta"] = contenido.get("receta", {})
     
     if task.register_id:
         from app.models import Register

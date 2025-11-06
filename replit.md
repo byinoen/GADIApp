@@ -25,13 +25,17 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 - **Host Configuration**: Both servers bound to 0.0.0.0 for Replit compatibility
 
 ## Recent Changes (November 6, 2025)
-- **MAJOR**: Implemented task-to-register navigation workflow
+- **MAJOR**: Implemented complete task-to-register-to-procedure integration
+- Added `contenido` JSON field to Procedure model for storing procedimiento steps, ingredientes, materiales, and precauciones
+- Updated `/tasks/{task_id}/details` endpoint to return full procedure content from database
+- Enhanced TaskDetailModal to display complete procedure details (receta, pasos, precauciones)
+- Implemented "Ir al Registro" button in task detail view for tasks with linked procedures
 - Added NavigationContext for seamless navigation with parameters across screens
-- Enhanced TaskDetailModal with "Ir al Registro" button for tasks with procedures
 - Implemented automatic task completion when register is filled and signed
 - Register entries now automatically complete associated tasks when signed
 - Workers can now view procedure details and navigate directly to register entry from task view
 - Improved UX flow: Task → View Procedure → Fill Register → Auto-complete Task
+- Database schema: Added register_id, procedure_id, requires_signature to tasks table
 
 ## Previous Changes (September 17, 2025)
 - **CRITICAL**: Successfully resolved data persistence issue by migrating from in-memory storage to PostgreSQL database

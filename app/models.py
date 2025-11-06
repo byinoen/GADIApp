@@ -97,6 +97,7 @@ class Procedure(Base):
     titulo = Column(String, nullable=False)
     descripcion = Column(Text, nullable=True)
     orden = Column(Integer, default=1)
+    contenido = Column(JSON, nullable=True)  # Stores procedimiento, ingredientes, precauciones
     
     # Relationships
     register = relationship("Register", back_populates="procedures")
