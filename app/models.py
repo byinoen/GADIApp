@@ -107,10 +107,16 @@ class RegisterEntry(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     register_id = Column(Integer, ForeignKey("registers.id"), nullable=False)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
+    procedure_id = Column(Integer, ForeignKey("procedures.id"), nullable=True)
     empleado_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
-    fecha = Column(String, nullable=False)
-    hora = Column(String, nullable=False)
+    empleado_name = Column(String, nullable=True)
+    fecha_completado = Column(DateTime(timezone=True), nullable=True)
+    fecha = Column(String, nullable=True)
+    hora = Column(String, nullable=True)
     observaciones = Column(Text, nullable=True)
+    resultado = Column(String, nullable=True)
+    tiempo_real = Column(Integer, nullable=True)
     firma_empleado = Column(String, nullable=True)
     firma_supervisor = Column(String, nullable=True)
     campos_personalizados = Column(JSON, default=dict)  # Custom field values
@@ -119,6 +125,8 @@ class RegisterEntry(Base):
     # Relationships
     register = relationship("Register", back_populates="entries")
     employee = relationship("Employee", back_populates="register_entries")
+    task = relationship("Task", foreign_keys=[task_id])
+    procedure = relationship("Procedure", foreign_keys=[procedure_id])
 
 class ManagerInboxNotification(Base):
     __tablename__ = "manager_inbox_notifications"
