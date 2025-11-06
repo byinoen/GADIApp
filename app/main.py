@@ -827,7 +827,10 @@ async def create_task(task: dict, user: Dict[str, Any] = Depends(require_permiss
         prioridad=task.get("prioridad", "media"),
         is_recurring=is_recurring,
         frequency=frequency,
-        parent_task_id=recurring_task_id if is_recurring else None
+        parent_task_id=recurring_task_id if is_recurring else None,
+        register_id=task.get("register_id"),
+        procedure_id=task.get("procedure_id"),
+        requires_signature=task.get("requires_signature", False)
     )
     
     # Add to database

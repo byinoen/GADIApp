@@ -333,6 +333,42 @@ export async function getRegisters(token) {
   }
 }
 
+export async function getAllProcedures(token) {
+  try {
+    const registersResponse = await getRegisters(token);
+    const registers = registersResponse.registers || [];
+    
+    const allProcedures = [];
+    for (const register of registers) {
+      try {
+        const response = await fetch(`${BASE_URL}/registers/${register.id}/procedures`, {
+          method: 'GET',
+          headers: {
+            'X-Demo-Token': token
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const procedures = data.procedures || [];
+          procedures.forEach(proc => {
+            allProcedures.push({
+              ...proc,
+              register_name: register.nombre
+            });
+          });
+        }
+      } catch (error) {
+        console.error(`Failed to fetch procedures for register ${register.id}:`, error);
+      }
+    }
+    
+    return { procedures: allProcedures };
+  } catch (error) {
+    throw new Error(`Failed to get procedures: ${error.message}`);
+  }
+}
+
 export async function getRegister(token, registerId) {
   try {
     const response = await fetch(`${BASE_URL}/registers/${registerId}`, {

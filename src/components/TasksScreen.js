@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getTasks, getEmployees, createTask } from '../services/api';
+import { getTasks, getEmployees, createTask, getRegisters, getAllProcedures } from '../services/api';
 import TaskDetailModal from './TaskDetailModal';
 import './TasksScreen.css';
 
 function TasksScreen() {
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [registers, setRegisters] = useState([]);
+  const [procedures, setProcedures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
@@ -17,7 +19,10 @@ function TasksScreen() {
     empleado_id: '',
     fecha: new Date().toISOString().split('T')[0],
     prioridad: 'media',
-    estado: 'pendiente'
+    estado: 'pendiente',
+    register_id: null,
+    procedure_id: null,
+    requires_signature: false
   });
   const { token, user } = useAuth();
 
@@ -30,12 +35,16 @@ function TasksScreen() {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const [tasksResponse, employeesResponse] = await Promise.all([
+      const [tasksResponse, employeesResponse, registersResponse, proceduresResponse] = await Promise.all([
         getTasks(token),
-        getEmployees(token)
+        getEmployees(token),
+        getRegisters(token),
+        getAllProcedures(token)
       ]);
       setTasks(tasksResponse.tasks || []);
       setEmployees(employeesResponse.employees || []);
+      setRegisters(registersResponse.registers || []);
+      setProcedures(proceduresResponse.procedures || []);
     } catch (error) {
       console.error('Error loading tasks:', error);
       alert('Error al cargar las tareas');
@@ -75,7 +84,10 @@ function TasksScreen() {
         empleado_id: '',
         fecha: new Date().toISOString().split('T')[0],
         prioridad: 'media',
-        estado: 'pendiente'
+        estado: 'pendiente',
+        register_id: null,
+        procedure_id: null,
+        requires_signature: false
       });
       loadTasks();
     } catch (error) {
@@ -127,11 +139,6 @@ function TasksScreen() {
         return estado;
     }
   };
-
-  // Debug logging
-  console.log('TasksScreen - User object:', user);
-  console.log('TasksScreen - User role:', user?.role);
-  console.log('TasksScreen - Can create?', (user?.role === 'admin' || user?.role === 'encargado'));
 
   if (loading) {
     return (
@@ -291,6 +298,47 @@ function TasksScreen() {
                     <option value="completada">Completada</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Registro (Opcional)</label>
+                  <select
+                    value={newTask.register_id || ''}
+                    onChange={(e) => setNewTask({...newTask, register_id: e.target.value ? parseInt(e.target.value) : null})}
+                  >
+                    <option value="">Sin registro</option>
+                    {registers.map(reg => (
+                      <option key={reg.id} value={reg.id}>{reg.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Procedimiento (Opcional)</label>
+                  <select
+                    value={newTask.procedure_id || ''}
+                    onChange={(e) => setNewTask({...newTask, procedure_id: e.target.value ? parseInt(e.target.value) : null})}
+                  >
+                    <option value="">Sin procedimiento</option>
+                    {procedures.map(proc => (
+                      <option key={proc.id} value={proc.id}>
+                        {proc.nombre} {proc.register_name ? `(${proc.register_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={newTask.requires_signature}
+                    onChange={(e) => setNewTask({...newTask, requires_signature: e.target.checked})}
+                  />
+                  <span>Requiere firma para completar</span>
+                </label>
               </div>
             </div>
             <div className="modal-footer">
