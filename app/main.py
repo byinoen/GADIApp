@@ -1314,10 +1314,31 @@ async def get_register(register_id: int, x_demo_token: str = Header(None)):
     }
 
 @registers_router.get("/{register_id}/procedures")
-async def get_register_procedures(register_id: int, x_demo_token: str = Header(None)):
+async def get_register_procedures(
+    register_id: int, 
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Get all procedures for a specific register"""
-    register_procedures = [proc for proc in procedures_db if proc["register_id"] == register_id]
-    return {"procedures": register_procedures}
+    # Query procedures from database
+    procedures = session.query(Procedure).filter(Procedure.register_id == register_id).all()
+    
+    # Convert to response format
+    procedures_data = []
+    for proc in procedures:
+        procedures_data.append({
+            "id": proc.id,
+            "register_id": proc.register_id,
+            "nombre": proc.titulo,
+            "descripcion": proc.descripcion,
+            "receta": proc.contenido.get("receta", {}) if proc.contenido else {},
+            "procedimiento": proc.contenido.get("procedimiento", []) if proc.contenido else [],
+            "precauciones": proc.contenido.get("precauciones", []) if proc.contenido else [],
+            "tiempo_estimado": proc.contenido.get("tiempo_estimado", "1 hora") if proc.contenido else "1 hora",
+            "created_at": proc.created_at.strftime("%Y-%m-%d %H:%M:%S") if proc.created_at else None
+        })
+    
+    return {"procedures": procedures_data}
 
 @registers_router.get("/{register_id}/entries")
 async def get_register_entries(
@@ -1518,24 +1539,50 @@ async def create_register(register_data: dict, x_demo_token: str = Header(None))
     return {"message": "Register created", "register": new_register}
 
 @registers_router.post("/{register_id}/procedures")
-async def create_procedure(register_id: int, procedure_data: dict, x_demo_token: str = Header(None)):
+async def create_procedure(
+    register_id: int, 
+    procedure_data: dict, 
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Create a new procedure for a register"""
-    # Generate new ID  
-    new_id = max([proc["id"] for proc in procedures_db], default=0) + 1
+    # Verify register exists
+    register = session.query(Register).filter(Register.id == register_id).first()
+    if not register:
+        raise HTTPException(status_code=404, detail="Register not found")
     
-    new_procedure = {
-        "id": new_id,
-        "register_id": register_id,
-        "nombre": procedure_data["nombre"],
-        "receta": procedure_data.get("receta", {}),
-        "procedimiento": procedure_data.get("procedimiento", []),
-        "precauciones": procedure_data.get("precauciones", []),
-        "tiempo_estimado": procedure_data.get("tiempo_estimado", "1 hora"),
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Create new procedure in database
+    new_procedure = Procedure(
+        register_id=register_id,
+        titulo=procedure_data["nombre"],
+        descripcion=procedure_data.get("descripcion", ""),
+        contenido={
+            "receta": procedure_data.get("receta", {}),
+            "procedimiento": procedure_data.get("procedimiento", []),
+            "precauciones": procedure_data.get("precauciones", []),
+            "tiempo_estimado": procedure_data.get("tiempo_estimado", "1 hora")
+        }
+    )
+    
+    session.add(new_procedure)
+    session.commit()
+    session.refresh(new_procedure)
+    
+    # Return formatted response
+    return {
+        "message": "Procedure created", 
+        "procedure": {
+            "id": new_procedure.id,
+            "register_id": new_procedure.register_id,
+            "nombre": new_procedure.titulo,
+            "descripcion": new_procedure.descripcion,
+            "receta": new_procedure.contenido.get("receta", {}),
+            "procedimiento": new_procedure.contenido.get("procedimiento", []),
+            "precauciones": new_procedure.contenido.get("precauciones", []),
+            "tiempo_estimado": new_procedure.contenido.get("tiempo_estimado", "1 hora"),
+            "created_at": new_procedure.created_at.strftime("%Y-%m-%d %H:%M:%S") if new_procedure.created_at else None
+        }
     }
-    
-    procedures_db.append(new_procedure)
-    return {"message": "Procedure created", "procedure": new_procedure}
 
 @registers_router.put("/{register_id}")
 async def update_register(register_id: int, register_data: dict, x_demo_token: str = Header(None)):
@@ -1554,20 +1601,52 @@ async def update_register(register_id: int, register_data: dict, x_demo_token: s
     return {"message": "Register updated", "register": register}
 
 @registers_router.put("/{register_id}/procedures/{procedure_id}")
-async def update_procedure(register_id: int, procedure_id: int, procedure_data: dict, x_demo_token: str = Header(None)):
+async def update_procedure(
+    register_id: int, 
+    procedure_id: int, 
+    procedure_data: dict, 
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Update an existing procedure"""
-    procedure = next((proc for proc in procedures_db if proc["id"] == procedure_id and proc["register_id"] == register_id), None)
+    # Find procedure in database
+    procedure = session.query(Procedure).filter(
+        Procedure.id == procedure_id, 
+        Procedure.register_id == register_id
+    ).first()
+    
     if not procedure:
         raise HTTPException(status_code=404, detail="Procedure not found")
     
     # Update fields
-    procedure["nombre"] = procedure_data.get("nombre", procedure["nombre"])
-    procedure["receta"] = procedure_data.get("receta", procedure["receta"])
-    procedure["procedimiento"] = procedure_data.get("procedimiento", procedure["procedimiento"])
-    procedure["precauciones"] = procedure_data.get("precauciones", procedure["precauciones"])
-    procedure["tiempo_estimado"] = procedure_data.get("tiempo_estimado", procedure["tiempo_estimado"])
+    procedure.titulo = procedure_data.get("nombre", procedure.titulo)
+    procedure.descripcion = procedure_data.get("descripcion", procedure.descripcion)
     
-    return {"message": "Procedure updated", "procedure": procedure}
+    # Update contenido JSON field
+    contenido = procedure.contenido or {}
+    contenido["receta"] = procedure_data.get("receta", contenido.get("receta", {}))
+    contenido["procedimiento"] = procedure_data.get("procedimiento", contenido.get("procedimiento", []))
+    contenido["precauciones"] = procedure_data.get("precauciones", contenido.get("precauciones", []))
+    contenido["tiempo_estimado"] = procedure_data.get("tiempo_estimado", contenido.get("tiempo_estimado", "1 hora"))
+    procedure.contenido = contenido
+    
+    session.commit()
+    session.refresh(procedure)
+    
+    # Return formatted response
+    return {
+        "message": "Procedure updated", 
+        "procedure": {
+            "id": procedure.id,
+            "register_id": procedure.register_id,
+            "nombre": procedure.titulo,
+            "descripcion": procedure.descripcion,
+            "receta": procedure.contenido.get("receta", {}),
+            "procedimiento": procedure.contenido.get("procedimiento", []),
+            "precauciones": procedure.contenido.get("precauciones", []),
+            "tiempo_estimado": procedure.contenido.get("tiempo_estimado", "1 hora")
+        }
+    }
 
 @registers_router.delete("/{register_id}")
 async def delete_register(register_id: int, x_demo_token: str = Header(None)):
