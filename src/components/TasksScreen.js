@@ -128,6 +128,11 @@ function TasksScreen() {
     }
   };
 
+  // Debug logging
+  console.log('TasksScreen - User object:', user);
+  console.log('TasksScreen - User role:', user?.role);
+  console.log('TasksScreen - Can create?', (user?.role === 'admin' || user?.role === 'encargado'));
+
   if (loading) {
     return (
       <div className="tasks-screen">
