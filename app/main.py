@@ -1369,43 +1369,78 @@ def validate_custom_fields(register_id: int, custom_field_data: dict):
     return len(errors) == 0, errors
 
 @registers_router.post("/{register_id}/entries")
-async def create_register_entry(register_id: int, entry_data: dict, x_demo_token: str = Header(None)):
+async def create_register_entry(
+    register_id: int, 
+    entry_data: dict, 
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Create a new register entry (employee signature) with custom fields"""
-    # Generate new entry ID
-    new_id = max([entry["id"] for entry in register_entries_db], default=0) + 1
+    # Get employee
+    employee = session.query(Employee).filter(Employee.id == entry_data["empleado_id"]).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found")
     
-    # Get employee name
-    employee = db.query(Employee).filter(Employee.id == entry_data["empleado_id"]).first()
-    empleado_name = employee.nombre if employee else f"Empleado {entry_data['empleado_id']}"
+    # Get register to validate custom fields
+    register = session.query(Register).filter(Register.id == register_id).first()
+    if not register:
+        raise HTTPException(status_code=404, detail="Register not found")
     
     # Validate custom fields if provided
     custom_field_data = entry_data.get("campos_personalizados", {})
-    if custom_field_data:
-        is_valid, validation_errors = validate_custom_fields(register_id, custom_field_data)
-        if not is_valid:
-            raise HTTPException(status_code=400, detail=f"Errores de validación: {'; '.join(validation_errors)}")
+    if custom_field_data and register.campos_personalizados:
+        errors = []
+        for campo in register.campos_personalizados:
+            if campo["requerido"] and campo["nombre"] not in custom_field_data:
+                errors.append(f"Campo requerido faltante: {campo['etiqueta']}")
+        
+        if errors:
+            raise HTTPException(status_code=400, detail=f"Errores de validación: {'; '.join(errors)}")
     
     # Create new register entry
-    new_entry = {
-        "id": new_id,
-        "register_id": register_id,
-        "task_id": entry_data.get("task_id"),
-        "procedure_id": entry_data.get("procedure_id"),
-        "empleado_id": entry_data["empleado_id"],
-        "empleado_name": empleado_name,
-        "fecha_completado": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "firma_empleado": entry_data.get("firma_empleado", "Firmado digitalmente"),
-        "observaciones": entry_data.get("observaciones", ""),
-        "resultado": entry_data.get("resultado", "completado"),  # completado, incompleto, con_observaciones
-        "tiempo_real": entry_data.get("tiempo_real", None),
-        "campos_personalizados": custom_field_data,
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    new_entry = RegisterEntry(
+        register_id=register_id,
+        task_id=entry_data.get("task_id"),
+        procedure_id=entry_data.get("procedure_id"),
+        empleado_id=entry_data["empleado_id"],
+        empleado_name=employee.nombre,
+        fecha_completado=datetime.now(timezone.utc),
+        firma_empleado=entry_data.get("firma_empleado", "Firmado digitalmente"),
+        observaciones=entry_data.get("observaciones", ""),
+        resultado=entry_data.get("resultado", "completado"),
+        tiempo_real=entry_data.get("tiempo_real"),
+        campos_personalizados=custom_field_data
+    )
+    
+    session.add(new_entry)
+    
+    # If task_id is provided and requires_signature is true, mark task as completed
+    if entry_data.get("task_id"):
+        task = session.query(Task).filter(Task.id == entry_data["task_id"]).first()
+        if task and task.requires_signature:
+            task.estado = "completada"
+            session.add(task)
+    
+    session.commit()
+    session.refresh(new_entry)
+    
+    return {
+        "message": "Register entry created", 
+        "entry": {
+            "id": new_entry.id,
+            "register_id": new_entry.register_id,
+            "task_id": new_entry.task_id,
+            "procedure_id": new_entry.procedure_id,
+            "empleado_id": new_entry.empleado_id,
+            "empleado_name": new_entry.empleado_name,
+            "fecha_completado": new_entry.fecha_completado.strftime("%Y-%m-%d %H:%M:%S"),
+            "firma_empleado": new_entry.firma_empleado,
+            "observaciones": new_entry.observaciones,
+            "resultado": new_entry.resultado,
+            "tiempo_real": new_entry.tiempo_real,
+            "campos_personalizados": new_entry.campos_personalizados
+        }
     }
-    
-    # Add to database
-    register_entries_db.append(new_entry)
-    
-    return {"message": "Register entry created", "entry": new_entry}
 
 @registers_router.post("")
 async def create_register(register_data: dict, x_demo_token: str = Header(None)):
