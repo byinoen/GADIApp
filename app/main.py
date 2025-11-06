@@ -1398,6 +1398,16 @@ async def create_register_entry(
             raise HTTPException(status_code=400, detail=f"Errores de validación: {'; '.join(errors)}")
     
     # Create new register entry
+    # Handle tiempo_real - convert empty string to None
+    tiempo_real_value = entry_data.get("tiempo_real")
+    if tiempo_real_value == "" or tiempo_real_value is None:
+        tiempo_real_value = None
+    else:
+        try:
+            tiempo_real_value = int(tiempo_real_value)
+        except (ValueError, TypeError):
+            tiempo_real_value = None
+    
     new_entry = RegisterEntry(
         register_id=register_id,
         task_id=entry_data.get("task_id"),
@@ -1408,7 +1418,7 @@ async def create_register_entry(
         firma_empleado=entry_data.get("firma_empleado", "Firmado digitalmente"),
         observaciones=entry_data.get("observaciones", ""),
         resultado=entry_data.get("resultado", "completado"),
-        tiempo_real=entry_data.get("tiempo_real"),
+        tiempo_real=tiempo_real_value,
         campos_personalizados=custom_field_data
     )
     
