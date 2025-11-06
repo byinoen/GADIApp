@@ -1,0 +1,322 @@
+INFO:     Will watch for changes in these directories: ['/home/runner/workspace']
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+2025-11-06 21:16:38,587 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2025-11-06 21:16:38,587 INFO sqlalchemy.engine.Engine [raw sql] {}
+2025-11-06 21:16:38,633 INFO sqlalchemy.engine.Engine select current_schema()
+2025-11-06 21:16:38,638 INFO sqlalchemy.engine.Engine [raw sql] {}
+2025-11-06 21:16:38,682 INFO sqlalchemy.engine.Engine show standard_conforming_strings
+2025-11-06 21:16:38,682 INFO sqlalchemy.engine.Engine [raw sql] {}
+2025-11-06 21:16:38,724 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:16:38,728 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,728 INFO sqlalchemy.engine.Engine [generated in 0.00021s] {'table_name': 'employees', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,790 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,790 INFO sqlalchemy.engine.Engine [cached since 0.06202s ago] {'table_name': 'schedules', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,811 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,811 INFO sqlalchemy.engine.Engine [cached since 0.08302s ago] {'table_name': 'tasks', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,832 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,832 INFO sqlalchemy.engine.Engine [cached since 0.104s ago] {'table_name': 'permissions', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,869 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,869 INFO sqlalchemy.engine.Engine [cached since 0.1408s ago] {'table_name': 'roles', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,899 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,899 INFO sqlalchemy.engine.Engine [cached since 0.1708s ago] {'table_name': 'registers', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,920 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,920 INFO sqlalchemy.engine.Engine [cached since 0.1918s ago] {'table_name': 'procedures', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,943 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,943 INFO sqlalchemy.engine.Engine [cached since 0.2147s ago] {'table_name': 'register_entries', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,975 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,976 INFO sqlalchemy.engine.Engine [cached since 0.2472s ago] {'table_name': 'manager_inbox_notifications', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:38,997 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:38,997 INFO sqlalchemy.engine.Engine [cached since 0.2689s ago] {'table_name': 'task_definitions', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:39,018 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:39,018 INFO sqlalchemy.engine.Engine [cached since 0.2901s ago] {'table_name': 'task_assignments', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:39,039 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = %(table_name)s AND pg_catalog.pg_class.relkind = ANY (ARRAY[%(param_1)s, %(param_2)s, %(param_3)s, %(param_4)s, %(param_5)s]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != %(nspname_1)s
+2025-11-06 21:16:39,039 INFO sqlalchemy.engine.Engine [cached since 0.3112s ago] {'table_name': 'recurring_tasks', 'param_1': 'r', 'param_2': 'p', 'param_3': 'f', 'param_4': 'v', 'param_5': 'm', 'nspname_1': 'pg_catalog'}
+2025-11-06 21:16:39,060 INFO sqlalchemy.engine.Engine COMMIT
+2025-11-06 21:16:39,138 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:16:39,139 INFO sqlalchemy.engine.Engine SELECT permissions.id AS permissions_id, permissions.name AS permissions_name, permissions.description AS permissions_description, permissions.category AS permissions_category 
+FROM permissions 
+ LIMIT %(param_1)s
+2025-11-06 21:16:39,139 INFO sqlalchemy.engine.Engine [generated in 0.00014s] {'param_1': 1}
+2025-11-06 21:16:39,204 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+ LIMIT %(param_1)s
+2025-11-06 21:16:39,204 INFO sqlalchemy.engine.Engine [generated in 0.00019s] {'param_1': 1}
+2025-11-06 21:16:39,233 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+ LIMIT %(param_1)s
+2025-11-06 21:16:39,234 INFO sqlalchemy.engine.Engine [generated in 0.00022s] {'param_1': 1}
+2025-11-06 21:16:39,269 INFO sqlalchemy.engine.Engine SELECT schedules.id AS schedules_id, schedules.fecha AS schedules_fecha, schedules.turno AS schedules_turno, schedules.empleado_id AS schedules_empleado_id 
+FROM schedules 
+ LIMIT %(param_1)s
+2025-11-06 21:16:39,269 INFO sqlalchemy.engine.Engine [generated in 0.00018s] {'param_1': 1}
+2025-11-06 21:16:39,300 INFO sqlalchemy.engine.Engine SELECT tasks.id AS tasks_id, tasks.titulo AS tasks_titulo, tasks.descripcion AS tasks_descripcion, tasks.empleado_id AS tasks_empleado_id, tasks.fecha AS tasks_fecha, tasks.estado AS tasks_estado, tasks.prioridad AS tasks_prioridad, tasks.is_recurring AS tasks_is_recurring, tasks.frequency AS tasks_frequency, tasks.parent_task_id AS tasks_parent_task_id, tasks.start_time AS tasks_start_time, tasks.actual_duration_minutes AS tasks_actual_duration_minutes, tasks.register_id AS tasks_register_id, tasks.procedure_id AS tasks_procedure_id, tasks.requires_signature AS tasks_requires_signature 
+FROM tasks 
+ LIMIT %(param_1)s
+2025-11-06 21:16:39,300 INFO sqlalchemy.engine.Engine [generated in 0.00017s] {'param_1': 1}
+2025-11-06 21:16:39,329 INFO sqlalchemy.engine.Engine COMMIT
+Starting FastAPI backend with CORS configuration
+INFO:     Started server process [3005]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     172.31.67.2:34006 - "GET /schedules HTTP/1.1" 401 Unauthorized
+INFO:     172.31.67.2:34012 - "GET /employees HTTP/1.1" 401 Unauthorized
+INFO:     172.31.67.2:34028 - "GET /tasks HTTP/1.1" 401 Unauthorized
+2025-11-06 21:18:06,620 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:06,621 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+WHERE roles.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:06,621 INFO sqlalchemy.engine.Engine [generated in 0.00016s] {'id_1': 'admin', 'param_1': 1}
+2025-11-06 21:18:06,664 INFO sqlalchemy.engine.Engine ROLLBACK
+INFO:     172.31.67.2:39092 - "POST /auth/login HTTP/1.1" 200 OK
+2025-11-06 21:18:08,515 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:08,517 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+WHERE roles.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:08,518 INFO sqlalchemy.engine.Engine [cached since 1.896s ago] {'id_1': 'admin', 'param_1': 1}
+2025-11-06 21:18:08,559 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:08,601 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:08,602 INFO sqlalchemy.engine.Engine SELECT schedules.id AS schedules_id, schedules.fecha AS schedules_fecha, schedules.turno AS schedules_turno, schedules.empleado_id AS schedules_empleado_id 
+FROM schedules JOIN employees ON employees.id = schedules.empleado_id 
+WHERE employees.activo = true
+2025-11-06 21:18:08,603 INFO sqlalchemy.engine.Engine [generated in 0.00018s] {}
+2025-11-06 21:18:08,647 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:08,647 INFO sqlalchemy.engine.Engine [generated in 0.00026s] {'pk_1': 1}
+2025-11-06 21:18:08,653 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:08,654 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+WHERE roles.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:08,654 INFO sqlalchemy.engine.Engine [cached since 2.033s ago] {'id_1': 'admin', 'param_1': 1}
+2025-11-06 21:18:08,662 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:08,663 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+WHERE roles.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:08,663 INFO sqlalchemy.engine.Engine [cached since 2.042s ago] {'id_1': 'admin', 'param_1': 1}
+2025-11-06 21:18:08,670 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:08,670 INFO sqlalchemy.engine.Engine [cached since 0.023s ago] {'pk_1': 2}
+2025-11-06 21:18:08,692 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:08,692 INFO sqlalchemy.engine.Engine [cached since 0.04553s ago] {'pk_1': 3}
+2025-11-06 21:18:08,698 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:08,711 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:08,715 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:08,715 INFO sqlalchemy.engine.Engine [cached since 0.06856s ago] {'pk_1': 7}
+2025-11-06 21:18:08,760 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:08,760 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+WHERE roles.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:08,760 INFO sqlalchemy.engine.Engine [cached since 2.139s ago] {'id_1': 'admin', 'param_1': 1}
+2025-11-06 21:18:08,804 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:08,847 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:08,849 INFO sqlalchemy.engine.Engine SELECT tasks.id AS tasks_id, tasks.titulo AS tasks_titulo, tasks.descripcion AS tasks_descripcion, tasks.empleado_id AS tasks_empleado_id, tasks.fecha AS tasks_fecha, tasks.estado AS tasks_estado, tasks.prioridad AS tasks_prioridad, tasks.is_recurring AS tasks_is_recurring, tasks.frequency AS tasks_frequency, tasks.parent_task_id AS tasks_parent_task_id, tasks.start_time AS tasks_start_time, tasks.actual_duration_minutes AS tasks_actual_duration_minutes, tasks.register_id AS tasks_register_id, tasks.procedure_id AS tasks_procedure_id, tasks.requires_signature AS tasks_requires_signature 
+FROM tasks JOIN employees ON employees.id = tasks.empleado_id 
+WHERE employees.activo = true
+2025-11-06 21:18:08,849 INFO sqlalchemy.engine.Engine [generated in 0.00018s] {}
+2025-11-06 21:18:08,893 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:08,893 INFO sqlalchemy.engine.Engine [generated in 0.00015s] {'pk_1': 1}
+2025-11-06 21:18:08,914 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:08,914 INFO sqlalchemy.engine.Engine [cached since 0.02142s ago] {'pk_1': 2}
+2025-11-06 21:18:08,936 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:08,936 INFO sqlalchemy.engine.Engine [cached since 0.04282s ago] {'pk_1': 7}
+2025-11-06 21:18:08,979 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:08,980 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.activo = true
+2025-11-06 21:18:08,980 INFO sqlalchemy.engine.Engine [generated in 0.00011s] {}
+2025-11-06 21:18:09,024 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:09,024 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:09,025 INFO sqlalchemy.engine.Engine ROLLBACK
+INFO:     172.31.67.2:39092 - "GET /schedules HTTP/1.1" 200 OK
+INFO:     172.31.67.2:39110 - "GET /tasks HTTP/1.1" 200 OK
+INFO:     172.31.67.2:39094 - "GET /employees HTTP/1.1" 200 OK
+INFO:     172.31.67.2:39092 - "GET /registers HTTP/1.1" 200 OK
+2025-11-06 21:18:12,638 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:12,639 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+WHERE roles.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:12,639 INFO sqlalchemy.engine.Engine [cached since 6.018s ago] {'id_1': 'admin', 'param_1': 1}
+2025-11-06 21:18:12,653 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:12,653 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+WHERE roles.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:12,653 INFO sqlalchemy.engine.Engine [cached since 6.032s ago] {'id_1': 'admin', 'param_1': 1}
+2025-11-06 21:18:12,679 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:12,695 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:12,722 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:12,722 INFO sqlalchemy.engine.Engine SELECT roles.id AS roles_id, roles.name AS roles_name, roles.description AS roles_description, roles.permissions AS roles_permissions 
+FROM roles 
+WHERE roles.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:12,722 INFO sqlalchemy.engine.Engine [cached since 6.101s ago] {'id_1': 'admin', 'param_1': 1}
+2025-11-06 21:18:12,765 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:12,808 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:12,808 INFO sqlalchemy.engine.Engine SELECT tasks.id AS tasks_id, tasks.titulo AS tasks_titulo, tasks.descripcion AS tasks_descripcion, tasks.empleado_id AS tasks_empleado_id, tasks.fecha AS tasks_fecha, tasks.estado AS tasks_estado, tasks.prioridad AS tasks_prioridad, tasks.is_recurring AS tasks_is_recurring, tasks.frequency AS tasks_frequency, tasks.parent_task_id AS tasks_parent_task_id, tasks.start_time AS tasks_start_time, tasks.actual_duration_minutes AS tasks_actual_duration_minutes, tasks.register_id AS tasks_register_id, tasks.procedure_id AS tasks_procedure_id, tasks.requires_signature AS tasks_requires_signature 
+FROM tasks JOIN employees ON employees.id = tasks.empleado_id 
+WHERE employees.activo = true
+2025-11-06 21:18:12,809 INFO sqlalchemy.engine.Engine [cached since 3.96s ago] {}
+2025-11-06 21:18:12,851 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:12,851 INFO sqlalchemy.engine.Engine [cached since 3.958s ago] {'pk_1': 1}
+2025-11-06 21:18:12,871 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:12,872 INFO sqlalchemy.engine.Engine [cached since 3.979s ago] {'pk_1': 2}
+2025-11-06 21:18:12,892 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:12,892 INFO sqlalchemy.engine.Engine [cached since 3.999s ago] {'pk_1': 7}
+2025-11-06 21:18:12,935 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:12,936 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.activo = true
+2025-11-06 21:18:12,936 INFO sqlalchemy.engine.Engine [cached since 3.956s ago] {}
+2025-11-06 21:18:12,979 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-11-06 21:18:12,979 INFO sqlalchemy.engine.Engine ROLLBACK
+INFO:     172.31.67.2:39110 - "GET /tasks HTTP/1.1" 200 OK
+INFO:     172.31.67.2:39092 - "GET /employees HTTP/1.1" 200 OK
+2025-11-06 21:18:15,955 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:15,956 INFO sqlalchemy.engine.Engine SELECT tasks.id AS tasks_id, tasks.titulo AS tasks_titulo, tasks.descripcion AS tasks_descripcion, tasks.empleado_id AS tasks_empleado_id, tasks.fecha AS tasks_fecha, tasks.estado AS tasks_estado, tasks.prioridad AS tasks_prioridad, tasks.is_recurring AS tasks_is_recurring, tasks.frequency AS tasks_frequency, tasks.parent_task_id AS tasks_parent_task_id, tasks.start_time AS tasks_start_time, tasks.actual_duration_minutes AS tasks_actual_duration_minutes, tasks.register_id AS tasks_register_id, tasks.procedure_id AS tasks_procedure_id, tasks.requires_signature AS tasks_requires_signature 
+FROM tasks 
+WHERE tasks.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:15,956 INFO sqlalchemy.engine.Engine [generated in 0.00015s] {'id_1': 5, 'param_1': 1}
+2025-11-06 21:18:16,009 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:16,009 INFO sqlalchemy.engine.Engine [generated in 0.00016s] {'id_1': 7, 'param_1': 1}
+2025-11-06 21:18:16,032 INFO sqlalchemy.engine.Engine SELECT procedures.id AS procedures_id, procedures.register_id AS procedures_register_id, procedures.titulo AS procedures_titulo, procedures.descripcion AS procedures_descripcion, procedures.orden AS procedures_orden, procedures.contenido AS procedures_contenido 
+FROM procedures 
+WHERE procedures.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:16,032 INFO sqlalchemy.engine.Engine [generated in 0.00016s] {'id_1': 1, 'param_1': 1}
+2025-11-06 21:18:16,060 INFO sqlalchemy.engine.Engine SELECT registers.id AS registers_id, registers.nombre AS registers_nombre, registers.descripcion AS registers_descripcion, registers.activo AS registers_activo, registers.requiere_firma AS registers_requiere_firma, registers.campos_personalizados AS registers_campos_personalizados, registers.created_at AS registers_created_at 
+FROM registers 
+WHERE registers.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:16,061 INFO sqlalchemy.engine.Engine [generated in 0.00023s] {'id_1': 1, 'param_1': 1}
+2025-11-06 21:18:16,088 INFO sqlalchemy.engine.Engine ROLLBACK
+INFO:     172.31.67.2:39110 - "GET /tasks/5/details HTTP/1.1" 200 OK
+2025-11-06 21:18:24,323 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:24,323 INFO sqlalchemy.engine.Engine SELECT tasks.id AS tasks_id, tasks.titulo AS tasks_titulo, tasks.descripcion AS tasks_descripcion, tasks.empleado_id AS tasks_empleado_id, tasks.fecha AS tasks_fecha, tasks.estado AS tasks_estado, tasks.prioridad AS tasks_prioridad, tasks.is_recurring AS tasks_is_recurring, tasks.frequency AS tasks_frequency, tasks.parent_task_id AS tasks_parent_task_id, tasks.start_time AS tasks_start_time, tasks.actual_duration_minutes AS tasks_actual_duration_minutes, tasks.register_id AS tasks_register_id, tasks.procedure_id AS tasks_procedure_id, tasks.requires_signature AS tasks_requires_signature 
+FROM tasks 
+WHERE tasks.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:24,324 INFO sqlalchemy.engine.Engine [cached since 8.368s ago] {'id_1': 6, 'param_1': 1}
+2025-11-06 21:18:24,365 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:24,365 INFO sqlalchemy.engine.Engine [cached since 8.356s ago] {'id_1': 7, 'param_1': 1}
+2025-11-06 21:18:24,386 INFO sqlalchemy.engine.Engine ROLLBACK
+INFO:     172.31.67.2:39634 - "GET /tasks/6/details HTTP/1.1" 200 OK
+2025-11-06 21:18:26,743 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:26,743 INFO sqlalchemy.engine.Engine SELECT tasks.id AS tasks_id, tasks.titulo AS tasks_titulo, tasks.descripcion AS tasks_descripcion, tasks.empleado_id AS tasks_empleado_id, tasks.fecha AS tasks_fecha, tasks.estado AS tasks_estado, tasks.prioridad AS tasks_prioridad, tasks.is_recurring AS tasks_is_recurring, tasks.frequency AS tasks_frequency, tasks.parent_task_id AS tasks_parent_task_id, tasks.start_time AS tasks_start_time, tasks.actual_duration_minutes AS tasks_actual_duration_minutes, tasks.register_id AS tasks_register_id, tasks.procedure_id AS tasks_procedure_id, tasks.requires_signature AS tasks_requires_signature 
+FROM tasks 
+WHERE tasks.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:26,743 INFO sqlalchemy.engine.Engine [cached since 10.79s ago] {'id_1': 4, 'param_1': 1}
+2025-11-06 21:18:26,785 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:26,786 INFO sqlalchemy.engine.Engine [cached since 10.78s ago] {'id_1': 1, 'param_1': 1}
+2025-11-06 21:18:26,807 INFO sqlalchemy.engine.Engine ROLLBACK
+INFO:     172.31.67.2:39634 - "GET /tasks/4/details HTTP/1.1" 200 OK
+2025-11-06 21:18:28,351 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:28,352 INFO sqlalchemy.engine.Engine SELECT tasks.id AS tasks_id, tasks.titulo AS tasks_titulo, tasks.descripcion AS tasks_descripcion, tasks.empleado_id AS tasks_empleado_id, tasks.fecha AS tasks_fecha, tasks.estado AS tasks_estado, tasks.prioridad AS tasks_prioridad, tasks.is_recurring AS tasks_is_recurring, tasks.frequency AS tasks_frequency, tasks.parent_task_id AS tasks_parent_task_id, tasks.start_time AS tasks_start_time, tasks.actual_duration_minutes AS tasks_actual_duration_minutes, tasks.register_id AS tasks_register_id, tasks.procedure_id AS tasks_procedure_id, tasks.requires_signature AS tasks_requires_signature 
+FROM tasks 
+WHERE tasks.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:28,352 INFO sqlalchemy.engine.Engine [cached since 12.4s ago] {'id_1': 4, 'param_1': 1}
+2025-11-06 21:18:28,400 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:28,401 INFO sqlalchemy.engine.Engine [cached since 12.39s ago] {'id_1': 1, 'param_1': 1}
+2025-11-06 21:18:28,425 INFO sqlalchemy.engine.Engine UPDATE tasks SET estado=%(estado)s, actual_duration_minutes=%(actual_duration_minutes)s WHERE tasks.id = %(tasks_id)s
+2025-11-06 21:18:28,425 INFO sqlalchemy.engine.Engine [generated in 0.00019s] {'estado': 'completada', 'actual_duration_minutes': 46, 'tasks_id': 4}
+2025-11-06 21:18:28,447 INFO sqlalchemy.engine.Engine COMMIT
+2025-11-06 21:18:28,491 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:28,492 INFO sqlalchemy.engine.Engine SELECT tasks.id, tasks.titulo, tasks.descripcion, tasks.empleado_id, tasks.fecha, tasks.estado, tasks.prioridad, tasks.is_recurring, tasks.frequency, tasks.parent_task_id, tasks.start_time, tasks.actual_duration_minutes, tasks.register_id, tasks.procedure_id, tasks.requires_signature 
+FROM tasks 
+WHERE tasks.id = %(pk_1)s
+2025-11-06 21:18:28,492 INFO sqlalchemy.engine.Engine [generated in 0.00014s] {'pk_1': 4}
+2025-11-06 21:18:28,533 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(pk_1)s
+2025-11-06 21:18:28,533 INFO sqlalchemy.engine.Engine [generated in 0.00013s] {'pk_1': 1}
+2025-11-06 21:18:28,555 INFO sqlalchemy.engine.Engine ROLLBACK
+INFO:     172.31.67.2:39634 - "POST /tasks/4/finish HTTP/1.1" 200 OK
+2025-11-06 21:18:39,667 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-11-06 21:18:39,668 INFO sqlalchemy.engine.Engine SELECT tasks.id AS tasks_id, tasks.titulo AS tasks_titulo, tasks.descripcion AS tasks_descripcion, tasks.empleado_id AS tasks_empleado_id, tasks.fecha AS tasks_fecha, tasks.estado AS tasks_estado, tasks.prioridad AS tasks_prioridad, tasks.is_recurring AS tasks_is_recurring, tasks.frequency AS tasks_frequency, tasks.parent_task_id AS tasks_parent_task_id, tasks.start_time AS tasks_start_time, tasks.actual_duration_minutes AS tasks_actual_duration_minutes, tasks.register_id AS tasks_register_id, tasks.procedure_id AS tasks_procedure_id, tasks.requires_signature AS tasks_requires_signature 
+FROM tasks 
+WHERE tasks.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:39,668 INFO sqlalchemy.engine.Engine [cached since 23.71s ago] {'id_1': 5, 'param_1': 1}
+2025-11-06 21:18:39,710 INFO sqlalchemy.engine.Engine SELECT employees.id AS employees_id, employees.nombre AS employees_nombre, employees.email AS employees_email, employees.role AS employees_role, employees.telefono AS employees_telefono, employees.activo AS employees_activo, employees.password AS employees_password, employees.created_at AS employees_created_at 
+FROM employees 
+WHERE employees.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:39,710 INFO sqlalchemy.engine.Engine [cached since 23.7s ago] {'id_1': 7, 'param_1': 1}
+2025-11-06 21:18:39,732 INFO sqlalchemy.engine.Engine SELECT procedures.id AS procedures_id, procedures.register_id AS procedures_register_id, procedures.titulo AS procedures_titulo, procedures.descripcion AS procedures_descripcion, procedures.orden AS procedures_orden, procedures.contenido AS procedures_contenido 
+FROM procedures 
+WHERE procedures.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:39,732 INFO sqlalchemy.engine.Engine [cached since 23.7s ago] {'id_1': 1, 'param_1': 1}
+2025-11-06 21:18:39,754 INFO sqlalchemy.engine.Engine SELECT registers.id AS registers_id, registers.nombre AS registers_nombre, registers.descripcion AS registers_descripcion, registers.activo AS registers_activo, registers.requiere_firma AS registers_requiere_firma, registers.campos_personalizados AS registers_campos_personalizados, registers.created_at AS registers_created_at 
+FROM registers 
+WHERE registers.id = %(id_1)s 
+ LIMIT %(param_1)s
+2025-11-06 21:18:39,754 INFO sqlalchemy.engine.Engine [cached since 23.69s ago] {'id_1': 1, 'param_1': 1}
+2025-11-06 21:18:39,775 INFO sqlalchemy.engine.Engine ROLLBACK
+INFO:     172.31.67.2:44260 - "GET /tasks/5/details HTTP/1.1" 200 OK
+^CINFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3005]
+INFO:     Stopping reloader process [2993]
