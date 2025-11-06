@@ -48,6 +48,10 @@ localPort = 33765
 externalPort = 3003
 
 [[ports]]
+localPort = 38903
+externalPort = 4200
+
+[[ports]]
 localPort = 39619
 externalPort = 3001
 
@@ -57,5 +61,5 @@ externalPort = 3000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-build = ["npm", "run", "build"]
+run = ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000"]
+build = ["npm", "run"]
