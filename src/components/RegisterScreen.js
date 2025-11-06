@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getRegisters, getRegister, getRegisterEntries, exportRegisterPDF, createRegisterEntry } from '../services/api';
+import { useNavigation } from '../contexts/NavigationContext';
+import { getRegisters, getRegister, getRegisterEntries, exportRegisterPDF, createRegisterEntry, finishTask } from '../services/api';
 import './RegisterScreen.css';
 
-function RegisterScreen() {
+function RegisterScreen({ navigationParams }) {
   const { user, token } = useAuth();
+  const { clearParams } = useNavigation();
   const [registers, setRegisters] = useState([]);
   const [selectedRegister, setSelectedRegister] = useState(null);
   const [registerDetails, setRegisterDetails] = useState(null);
@@ -23,12 +25,45 @@ function RegisterScreen() {
     fecha_inicio: '',
     fecha_fin: ''
   });
+  const [pendingProcedureOpen, setPendingProcedureOpen] = useState(null);
 
   const isManager = user?.role === 'admin' || user?.role === 'encargado';
 
   useEffect(() => {
     loadRegisters();
   }, [token]);
+
+  useEffect(() => {
+    if (navigationParams?.autoOpen && navigationParams?.registerId) {
+      if (navigationParams.procedureId && navigationParams.taskId) {
+        setPendingProcedureOpen({
+          procedureId: navigationParams.procedureId,
+          taskId: navigationParams.taskId
+        });
+      }
+      loadRegisterDetails(navigationParams.registerId);
+      clearParams();
+    }
+  }, [navigationParams]);
+
+  useEffect(() => {
+    if (pendingProcedureOpen && registerDetails?.procedures) {
+      const procedure = registerDetails.procedures.find(
+        p => p.id === pendingProcedureOpen.procedureId
+      );
+      if (procedure) {
+        setSelectedProcedure(procedure);
+        setSignatureData({
+          task_id: pendingProcedureOpen.taskId.toString(),
+          observaciones: '',
+          resultado: 'completado',
+          tiempo_real: ''
+        });
+        setShowSignModal(true);
+        setPendingProcedureOpen(null);
+      }
+    }
+  }, [registerDetails?.procedures, pendingProcedureOpen]);
 
   const loadRegisters = async () => {
     setLoading(true);
@@ -110,9 +145,23 @@ function RegisterScreen() {
         tiempo_real: signatureData.tiempo_real
       };
       
-      await createRegisterEntry(token, selectedRegister, entryData);
+      const response = await createRegisterEntry(token, selectedRegister, entryData);
       
-      // Reload entries
+      if (entryData.task_id) {
+        try {
+          await finishTask(token, entryData.task_id, {
+            observaciones: signatureData.observaciones,
+            resultado: signatureData.resultado
+          });
+          alert('✅ Registro firmado y tarea completada automáticamente');
+        } catch (taskError) {
+          console.error('Error completing task:', taskError);
+          alert('✅ Registro firmado. Nota: No se pudo completar la tarea automáticamente.');
+        }
+      } else {
+        alert('✅ Registro firmado exitosamente');
+      }
+      
       const entriesResponse = await getRegisterEntries(
         token, 
         selectedRegister, 
@@ -121,7 +170,6 @@ function RegisterScreen() {
       );
       setRegisterEntries(entriesResponse.entries || []);
       
-      // Reset form
       setSignatureData({
         task_id: '',
         observaciones: '',

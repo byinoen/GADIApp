@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '../contexts/NavigationContext';
 import { getTaskDetails, startTask, finishTask } from '../services/api';
 import './TaskDetailModal.css';
 
 function TaskDetailModal({ task, onClose, onTaskUpdate }) {
   const { token, user } = useAuth();
+  const { navigateTo } = useNavigation();
   const [taskDetails, setTaskDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timer, setTimer] = useState(0);
@@ -19,6 +21,7 @@ function TaskDetailModal({ task, onClose, onTaskUpdate }) {
   const canInteractWithTask = task.empleado_id === user?.id;
   const isTaskStarted = task.estado === 'en_progreso';
   const isTaskCompleted = task.estado === 'completada';
+  const hasRegister = taskDetails?.task?.register_id && taskDetails?.task?.procedure_id;
 
   useEffect(() => {
     loadTaskDetails();
@@ -101,6 +104,22 @@ function TaskDetailModal({ task, onClose, onTaskUpdate }) {
       console.error('Error completing task with signature:', error);
       alert('Error completando tarea: ' + error.message);
     }
+  };
+
+  const handleGoToRegister = () => {
+    if (!taskDetails?.task?.register_id) {
+      alert('Esta tarea no tiene un registro asociado');
+      return;
+    }
+    
+    onClose();
+    
+    navigateTo('registers', {
+      taskId: task.id,
+      registerId: taskDetails.task.register_id,
+      procedureId: taskDetails.task.procedure_id,
+      autoOpen: true
+    });
   };
 
   const formatTime = (seconds) => {
@@ -198,7 +217,17 @@ function TaskDetailModal({ task, onClose, onTaskUpdate }) {
           {/* Procedure Details */}
           {taskDetails?.procedure && (
             <div className="procedure-section">
-              <h4>🧪 Procedimiento: {taskDetails.procedure.nombre}</h4>
+              <div className="procedure-header">
+                <h4>🧪 Procedimiento: {taskDetails.procedure.nombre}</h4>
+                {hasRegister && canInteractWithTask && !isTaskCompleted && (
+                  <button 
+                    className="goto-register-button"
+                    onClick={handleGoToRegister}
+                  >
+                    📋 Ir al Registro
+                  </button>
+                )}
+              </div>
               
               <div className="procedure-info">
                 <p><strong>⏱️ Tiempo estimado:</strong> {taskDetails.procedure.tiempo_estimado}</p>

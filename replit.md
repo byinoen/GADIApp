@@ -24,7 +24,16 @@ This is a full-stack application with a React web frontend and a FastAPI backend
 - **Backend Server**: FastAPI/uvicorn server on port 8000
 - **Host Configuration**: Both servers bound to 0.0.0.0 for Replit compatibility
 
-## Recent Changes (September 17, 2025)
+## Recent Changes (November 6, 2025)
+- **MAJOR**: Implemented task-to-register navigation workflow
+- Added NavigationContext for seamless navigation with parameters across screens
+- Enhanced TaskDetailModal with "Ir al Registro" button for tasks with procedures
+- Implemented automatic task completion when register is filled and signed
+- Register entries now automatically complete associated tasks when signed
+- Workers can now view procedure details and navigate directly to register entry from task view
+- Improved UX flow: Task → View Procedure → Fill Register → Auto-complete Task
+
+## Previous Changes (September 17, 2025)
 - **CRITICAL**: Successfully resolved data persistence issue by migrating from in-memory storage to PostgreSQL database
 - Implemented comprehensive database integration with SQLAlchemy ORM for all data operations
 - All employee, schedule, task, role, and permission operations now use persistent database storage

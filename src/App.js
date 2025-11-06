@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import LoginScreen from './components/LoginScreen';
 import WorkSchedulesScreen from './components/WorkSchedulesScreen';
 import TasksScreen from './components/TasksScreen';
@@ -10,7 +11,7 @@ import './App.css';
 // Main app component that handles navigation
 function AppContent() {
   const { isAuthenticated, user, currentUser, logout } = useAuth();
-  const [currentView, setCurrentView] = useState('schedules');
+  const { currentView, navigationParams, setCurrentView } = useNavigation();
   const isManager = user?.role === 'admin' || user?.role === 'encargado';
 
   if (!isAuthenticated) {
@@ -64,7 +65,7 @@ function AppContent() {
       <main className="app-main">
         {currentView === 'schedules' && <WorkSchedulesScreen />}
         {currentView === 'tasks' && <TasksScreen />}
-        {currentView === 'registers' && <RegisterScreen />}
+        {currentView === 'registers' && <RegisterScreen navigationParams={navigationParams} />}
         {currentView === 'management' && <ManagementScreen />}
       </main>
     </div>
@@ -75,7 +76,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <NavigationProvider>
+        <AppContent />
+      </NavigationProvider>
     </AuthProvider>
   );
 }
