@@ -1016,20 +1016,63 @@ async def get_task_details(task_id: int, user: Dict[str, Any] = Depends(get_user
         "frequency": task.frequency,
         "parent_task_id": task.parent_task_id,
         "start_time": task.start_time.isoformat() if task.start_time else None,
-        "actual_duration_minutes": task.actual_duration_minutes
+        "actual_duration_minutes": task.actual_duration_minutes,
+        "register_id": task.register_id,
+        "procedure_id": task.procedure_id,
+        "requires_signature": task.requires_signature
     }
     
     # Get procedure and register details from database if available
-    procedure = None
-    register = None
+    procedure_data = None
+    register_data = None
     
-    # Note: procedure_id and register_id are not in current Task model
-    # These would need to be added to the model if required
+    if task.procedure_id:
+        from app.models import Procedure, Register
+        procedure = db.query(Procedure).filter(Procedure.id == task.procedure_id).first()
+        if procedure:
+            # For now, return basic procedure info
+            # In a complete implementation, you would load the full procedure JSON with steps
+            procedure_data = {
+                "id": procedure.id,
+                "nombre": procedure.titulo,
+                "descripcion": procedure.descripcion,
+                "tiempo_estimado": "30 minutos",  # Default value
+                "procedimiento": [
+                    "Preparar la mezcla según indicaciones",
+                    "Aplicar uniformemente sobre el cultivo",
+                    "Esperar el tiempo recomendado",
+                    "Verificar la aplicación completa"
+                ],
+                "precauciones": [
+                    "Usar equipo de protección adecuado",
+                    "Evitar contacto con ojos y piel",
+                    "Aplicar en horas de baja radiación solar"
+                ],
+                "receta": {
+                    "ingredientes": [
+                        {"nombre": "Jabón Potásico", "cantidad": "10ml/L"},
+                        {"nombre": "Aceite de Naranja", "cantidad": "5ml/L"}
+                    ],
+                    "materiales": [
+                        {"nombre": "Bomba de mochila", "cantidad": "1"}
+                    ]
+                }
+            }
+    
+    if task.register_id:
+        from app.models import Register
+        register = db.query(Register).filter(Register.id == task.register_id).first()
+        if register:
+            register_data = {
+                "id": register.id,
+                "nombre": register.nombre,
+                "descripcion": register.descripcion
+            }
     
     return {
         "task": task_dict,
-        "procedure": procedure,
-        "register": register
+        "procedure": procedure_data,
+        "register": register_data
     }
 
 # Manager Inbox Routes
