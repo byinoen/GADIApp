@@ -50,6 +50,10 @@ function TaskDetailModal({ task, onClose, onTaskUpdate }) {
     setLoading(true);
     try {
       const response = await getTaskDetails(token, task.id);
+      console.log('Task details response:', response);
+      console.log('Has register_id?', response?.task?.register_id);
+      console.log('Has procedure_id?', response?.task?.procedure_id);
+      console.log('Has procedure?', response?.procedure);
       setTaskDetails(response);
     } catch (error) {
       console.error('Error loading task details:', error);
