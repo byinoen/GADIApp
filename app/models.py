@@ -51,6 +51,9 @@ class Task(Base):
     parent_task_id = Column(Integer, nullable=True)
     start_time = Column(DateTime(timezone=True), nullable=True)
     actual_duration_minutes = Column(Integer, nullable=True)
+    register_id = Column(Integer, ForeignKey("registers.id"), nullable=True)
+    procedure_id = Column(Integer, ForeignKey("procedures.id"), nullable=True)
+    requires_signature = Column(Boolean, default=False)
     
     # Relationships
     employee = relationship("Employee", back_populates="tasks")

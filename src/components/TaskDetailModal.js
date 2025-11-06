@@ -18,7 +18,8 @@ function TaskDetailModal({ task, onClose, onTaskUpdate }) {
     firma_empleado: 'Firmado digitalmente'
   });
 
-  const canInteractWithTask = task.empleado_id === user?.id;
+  const isManager = user?.role === 'admin' || user?.role === 'encargado';
+  const canInteractWithTask = task.empleado_id === user?.id || isManager;
   const isTaskStarted = task.estado === 'en_progreso';
   const isTaskCompleted = task.estado === 'completada';
   const hasRegister = taskDetails?.task?.register_id && taskDetails?.task?.procedure_id;
