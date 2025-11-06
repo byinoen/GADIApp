@@ -1296,24 +1296,68 @@ async def get_schedule_tasks(schedule_id: int, user: Dict[str, Any] = Depends(ge
 
 # Register Management Routes
 @registers_router.get("")
-async def get_registers(x_demo_token: str = Header(None)):
+async def get_registers(
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Get all active registers"""
-    active_registers = [reg for reg in registers_db if reg["activo"]]
-    return {"registers": active_registers}
+    # Query active registers from database
+    registers = session.query(Register).filter(Register.activo == True).all()
+    
+    # Convert to response format
+    registers_data = []
+    for reg in registers:
+        registers_data.append({
+            "id": reg.id,
+            "nombre": reg.nombre,
+            "descripcion": reg.descripcion,
+            "activo": reg.activo,
+            "campos_personalizados": reg.campos_personalizados or []
+        })
+    
+    return {"registers": registers_data}
 
 @registers_router.get("/{register_id}")
-async def get_register(register_id: int, x_demo_token: str = Header(None)):
+async def get_register(
+    register_id: int, 
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Get a specific register with its procedures"""
-    register = next((reg for reg in registers_db if reg["id"] == register_id), None)
+    # Query register from database
+    register = session.query(Register).filter(Register.id == register_id).first()
     if not register:
         raise HTTPException(status_code=404, detail="Register not found")
     
-    # Get procedures for this register
-    register_procedures = [proc for proc in procedures_db if proc["register_id"] == register_id]
+    # Query procedures from database
+    procedures = session.query(Procedure).filter(Procedure.register_id == register_id).all()
+    
+    # Convert procedures to response format
+    procedures_data = []
+    for proc in procedures:
+        procedures_data.append({
+            "id": proc.id,
+            "register_id": proc.register_id,
+            "nombre": proc.titulo,
+            "descripcion": proc.descripcion,
+            "receta": proc.contenido.get("receta", {}) if proc.contenido else {},
+            "procedimiento": proc.contenido.get("procedimiento", []) if proc.contenido else [],
+            "precauciones": proc.contenido.get("precauciones", []) if proc.contenido else [],
+            "tiempo_estimado": proc.contenido.get("tiempo_estimado", "1 hora") if proc.contenido else "1 hora"
+        })
+    
+    # Convert register to response format
+    register_data = {
+        "id": register.id,
+        "nombre": register.nombre,
+        "descripcion": register.descripcion,
+        "activo": register.activo,
+        "campos_personalizados": register.campos_personalizados or []
+    }
     
     return {
-        "register": register,
-        "procedures": register_procedures
+        "register": register_data,
+        "procedures": procedures_data
     }
 
 @registers_router.get("/{register_id}/procedures")
