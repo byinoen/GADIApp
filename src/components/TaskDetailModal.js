@@ -87,7 +87,9 @@ function TaskDetailModal({ task, onClose, onTaskUpdate }) {
       // Complete task without signature
       try {
         const response = await finishTask(token, task.id, {});
-        onTaskUpdate(response.task);
+        if (onTaskUpdate) {
+          onTaskUpdate(response.task);
+        }
         alert('✅ Tarea completada exitosamente');
         onClose();
       } catch (error) {
@@ -100,7 +102,9 @@ function TaskDetailModal({ task, onClose, onTaskUpdate }) {
   const handleCompleteWithSignature = async () => {
     try {
       const response = await finishTask(token, task.id, completionData);
-      onTaskUpdate(response.task);
+      if (onTaskUpdate) {
+        onTaskUpdate(response.task);
+      }
       
       if (response.register_entry) {
         alert('✅ Tarea completada y firmada en el registro exitosamente');
