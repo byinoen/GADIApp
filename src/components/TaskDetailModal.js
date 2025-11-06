@@ -69,7 +69,9 @@ function TaskDetailModal({ task, onClose, onTaskUpdate }) {
     try {
       const response = await startTask(token, task.id);
       // Update the task data and reload details
-      onTaskUpdate(response.task);
+      if (onTaskUpdate) {
+        onTaskUpdate(response.task);
+      }
       await loadTaskDetails();
       alert('🟢 Tarea iniciada - El cronómetro está funcionando');
     } catch (error) {
