@@ -1337,8 +1337,7 @@ async def get_register_procedures(
             "receta": proc.contenido.get("receta", {}) if proc.contenido else {},
             "procedimiento": proc.contenido.get("procedimiento", []) if proc.contenido else [],
             "precauciones": proc.contenido.get("precauciones", []) if proc.contenido else [],
-            "tiempo_estimado": proc.contenido.get("tiempo_estimado", "1 hora") if proc.contenido else "1 hora",
-            "created_at": proc.created_at.strftime("%Y-%m-%d %H:%M:%S") if proc.created_at else None
+            "tiempo_estimado": proc.contenido.get("tiempo_estimado", "1 hora") if proc.contenido else "1 hora"
         })
     
     return {"procedures": procedures_data}
@@ -1582,8 +1581,7 @@ async def create_procedure(
             "receta": new_procedure.contenido.get("receta", {}),
             "procedimiento": new_procedure.contenido.get("procedimiento", []),
             "precauciones": new_procedure.contenido.get("precauciones", []),
-            "tiempo_estimado": new_procedure.contenido.get("tiempo_estimado", "1 hora"),
-            "created_at": new_procedure.created_at.strftime("%Y-%m-%d %H:%M:%S") if new_procedure.created_at else None
+            "tiempo_estimado": new_procedure.contenido.get("tiempo_estimado", "1 hora")
         }
     }
 
