@@ -2,7 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import calendar
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -911,7 +911,7 @@ async def start_task(task_id: int, user: Dict[str, Any] = Depends(get_user_from_
     
     # Update task to in_progress with start time
     task.estado = "en_progreso"
-    task.start_time = datetime.now()
+    task.start_time = datetime.now(timezone.utc)
     task.actual_duration_minutes = None
     
     # Save changes
@@ -950,7 +950,7 @@ async def finish_task(task_id: int, completion_data: dict, user: Dict[str, Any] 
         raise HTTPException(status_code=404, detail="Employee not found")
     
     # Record finish time and calculate duration
-    finish_time = datetime.now()
+    finish_time = datetime.now(timezone.utc)
     
     # Calculate duration if task was started
     duration_minutes = None
