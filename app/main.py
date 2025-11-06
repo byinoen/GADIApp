@@ -1320,20 +1320,66 @@ async def get_register_procedures(register_id: int, x_demo_token: str = Header(N
     return {"procedures": register_procedures}
 
 @registers_router.get("/{register_id}/entries")
-async def get_register_entries(register_id: int, fecha_inicio: str = None, fecha_fin: str = None, x_demo_token: str = Header(None)):
+async def get_register_entries(
+    register_id: int, 
+    fecha_inicio: str = None, 
+    fecha_fin: str = None, 
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Get register entries with optional date filtering"""
-    entries = [entry for entry in register_entries_db if entry["register_id"] == register_id]
+    # Query database for register entries
+    query = session.query(RegisterEntry).filter(RegisterEntry.register_id == register_id)
     
     # Filter by date range if provided
     if fecha_inicio:
-        entries = [entry for entry in entries if entry["fecha_completado"] >= fecha_inicio]
+        # Parse date string to datetime object
+        try:
+            fecha_inicio_dt = datetime.fromisoformat(fecha_inicio.replace('Z', '+00:00'))
+            if fecha_inicio_dt.tzinfo is None:
+                fecha_inicio_dt = fecha_inicio_dt.replace(tzinfo=timezone.utc)
+            query = query.filter(RegisterEntry.fecha_completado >= fecha_inicio_dt)
+        except (ValueError, AttributeError):
+            pass  # Skip invalid date format
+    
     if fecha_fin:
-        entries = [entry for entry in entries if entry["fecha_completado"] <= fecha_fin]
+        # Parse date string to datetime object
+        try:
+            fecha_fin_dt = datetime.fromisoformat(fecha_fin.replace('Z', '+00:00'))
+            if fecha_fin_dt.tzinfo is None:
+                fecha_fin_dt = fecha_fin_dt.replace(tzinfo=timezone.utc)
+            query = query.filter(RegisterEntry.fecha_completado <= fecha_fin_dt)
+        except (ValueError, AttributeError):
+            pass  # Skip invalid date format
     
     # Sort by completion date, newest first
-    entries = sorted(entries, key=lambda x: x["fecha_completado"], reverse=True)
+    query = query.order_by(RegisterEntry.fecha_completado.desc())
     
-    return {"entries": entries}
+    entries = query.all()
+    
+    # Convert to dictionary format for response
+    entries_data = []
+    for entry in entries:
+        entries_data.append({
+            "id": entry.id,
+            "register_id": entry.register_id,
+            "task_id": entry.task_id,
+            "procedure_id": entry.procedure_id,
+            "empleado_id": entry.empleado_id,
+            "empleado_name": entry.empleado_name,
+            "fecha_completado": entry.fecha_completado.strftime("%Y-%m-%d %H:%M:%S") if entry.fecha_completado else None,
+            "fecha": entry.fecha,
+            "hora": entry.hora,
+            "observaciones": entry.observaciones,
+            "resultado": entry.resultado,
+            "tiempo_real": entry.tiempo_real,
+            "firma_empleado": entry.firma_empleado,
+            "firma_supervisor": entry.firma_supervisor,
+            "campos_personalizados": entry.campos_personalizados,
+            "created_at": entry.created_at.strftime("%Y-%m-%d %H:%M:%S") if entry.created_at else None
+        })
+    
+    return {"entries": entries_data}
 
 def validate_custom_fields(register_id: int, custom_field_data: dict):
     """Validate custom field data against register field definitions"""

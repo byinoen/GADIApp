@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getTasks, getEmployees } from '../services/api';
+import { getTasks, getEmployees, createTask } from '../services/api';
 import TaskDetailModal from './TaskDetailModal';
 import './TasksScreen.css';
 
@@ -10,6 +10,15 @@ function TasksScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newTask, setNewTask] = useState({
+    titulo: '',
+    descripcion: '',
+    empleado_id: '',
+    fecha: new Date().toISOString().split('T')[0],
+    prioridad: 'media',
+    estado: 'pendiente'
+  });
   const { token, user } = useAuth();
 
   useEffect(() => {
@@ -48,6 +57,31 @@ function TasksScreen() {
     setSelectedTask(null);
     setShowTaskDetail(false);
     loadTasks();
+  };
+
+  const handleCreateTask = async () => {
+    if (!newTask.titulo || !newTask.empleado_id) {
+      alert('Por favor complete los campos requeridos (Título y Empleado)');
+      return;
+    }
+
+    try {
+      await createTask(token, newTask);
+      alert('Tarea creada exitosamente');
+      setShowCreateModal(false);
+      setNewTask({
+        titulo: '',
+        descripcion: '',
+        empleado_id: '',
+        fecha: new Date().toISOString().split('T')[0],
+        prioridad: 'media',
+        estado: 'pendiente'
+      });
+      loadTasks();
+    } catch (error) {
+      console.error('Error creating task:', error);
+      alert('Error al crear la tarea');
+    }
   };
 
   const getEmployeeName = (empleadoId) => {
@@ -108,9 +142,16 @@ function TasksScreen() {
     <div className="tasks-screen">
       <div className="screen-header">
         <h1 className="screen-title">📋 Tareas</h1>
-        <button className="refresh-button" onClick={handleRefresh}>
-          🔄 Actualizar
-        </button>
+        <div className="header-buttons">
+          {(user?.role === 'admin' || user?.role === 'encargado') && (
+            <button className="create-button" onClick={() => setShowCreateModal(true)}>
+              ➕ Nueva Tarea
+            </button>
+          )}
+          <button className="refresh-button" onClick={handleRefresh}>
+            🔄 Actualizar
+          </button>
+        </div>
       </div>
 
       {tasks.length === 0 ? (
@@ -167,6 +208,96 @@ function TasksScreen() {
           task={selectedTask}
           onClose={handleCloseTaskDetail}
         />
+      )}
+
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>➕ Crear Nueva Tarea</h2>
+              <button className="close-button" onClick={() => setShowCreateModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Título *</label>
+                <input
+                  type="text"
+                  value={newTask.titulo}
+                  onChange={(e) => setNewTask({...newTask, titulo: e.target.value})}
+                  placeholder="Título de la tarea"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Descripción</label>
+                <textarea
+                  value={newTask.descripcion}
+                  onChange={(e) => setNewTask({...newTask, descripcion: e.target.value})}
+                  placeholder="Descripción de la tarea"
+                  rows="3"
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Empleado *</label>
+                  <select
+                    value={newTask.empleado_id}
+                    onChange={(e) => setNewTask({...newTask, empleado_id: parseInt(e.target.value)})}
+                  >
+                    <option value="">Seleccionar empleado</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>{emp.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Fecha</label>
+                  <input
+                    type="date"
+                    value={newTask.fecha}
+                    onChange={(e) => setNewTask({...newTask, fecha: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Prioridad</label>
+                  <select
+                    value={newTask.prioridad}
+                    onChange={(e) => setNewTask({...newTask, prioridad: e.target.value})}
+                  >
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Estado</label>
+                  <select
+                    value={newTask.estado}
+                    onChange={(e) => setNewTask({...newTask, estado: e.target.value})}
+                  >
+                    <option value="pendiente">Pendiente</option>
+                    <option value="en_progreso">En Progreso</option>
+                    <option value="completada">Completada</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-button" onClick={() => setShowCreateModal(false)}>
+                Cancelar
+              </button>
+              <button className="save-button" onClick={handleCreateTask}>
+                Crear Tarea
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
