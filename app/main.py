@@ -1566,23 +1566,35 @@ async def create_register_entry(
     }
 
 @registers_router.post("")
-async def create_register(register_data: dict, x_demo_token: str = Header(None)):
+async def create_register(
+    register_data: dict, 
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Create a new register"""
-    # Generate new ID
-    new_id = max([reg["id"] for reg in registers_db], default=0) + 1
+    # Create new register in database
+    new_register = Register(
+        nombre=register_data["nombre"],
+        descripcion=register_data.get("descripcion", ""),
+        activo=True,
+        campos_personalizados=register_data.get("campos_personalizados", [])
+    )
     
-    new_register = {
-        "id": new_id,
-        "nombre": register_data["nombre"],
-        "tipo": register_data.get("tipo", "general"),
-        "descripcion": register_data.get("descripcion", ""),
-        "activo": True,
-        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "campos_personalizados": register_data.get("campos_personalizados", [])
+    session.add(new_register)
+    session.commit()
+    session.refresh(new_register)
+    
+    # Return formatted response
+    return {
+        "message": "Register created", 
+        "register": {
+            "id": new_register.id,
+            "nombre": new_register.nombre,
+            "descripcion": new_register.descripcion,
+            "activo": new_register.activo,
+            "campos_personalizados": new_register.campos_personalizados or []
+        }
     }
-    
-    registers_db.append(new_register)
-    return {"message": "Register created", "register": new_register}
 
 @registers_router.post("/{register_id}/procedures")
 async def create_procedure(
@@ -1630,20 +1642,38 @@ async def create_procedure(
     }
 
 @registers_router.put("/{register_id}")
-async def update_register(register_id: int, register_data: dict, x_demo_token: str = Header(None)):
+async def update_register(
+    register_id: int, 
+    register_data: dict, 
+    x_demo_token: str = Header(None),
+    session: Session = Depends(get_db)
+):
     """Update an existing register"""
-    register = next((reg for reg in registers_db if reg["id"] == register_id), None)
+    # Find register in database
+    register = session.query(Register).filter(Register.id == register_id).first()
     if not register:
         raise HTTPException(status_code=404, detail="Register not found")
     
     # Update fields
-    register["nombre"] = register_data.get("nombre", register["nombre"])
-    register["tipo"] = register_data.get("tipo", register["tipo"])
-    register["descripcion"] = register_data.get("descripcion", register["descripcion"])
-    register["activo"] = register_data.get("activo", register["activo"])
-    register["campos_personalizados"] = register_data.get("campos_personalizados", register.get("campos_personalizados", []))
+    register.nombre = register_data.get("nombre", register.nombre)
+    register.descripcion = register_data.get("descripcion", register.descripcion)
+    register.activo = register_data.get("activo", register.activo)
+    register.campos_personalizados = register_data.get("campos_personalizados", register.campos_personalizados or [])
     
-    return {"message": "Register updated", "register": register}
+    session.commit()
+    session.refresh(register)
+    
+    # Return formatted response
+    return {
+        "message": "Register updated", 
+        "register": {
+            "id": register.id,
+            "nombre": register.nombre,
+            "descripcion": register.descripcion,
+            "activo": register.activo,
+            "campos_personalizados": register.campos_personalizados or []
+        }
+    }
 
 @registers_router.put("/{register_id}/procedures/{procedure_id}")
 async def update_procedure(
